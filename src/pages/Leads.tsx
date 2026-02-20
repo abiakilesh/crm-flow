@@ -21,7 +21,7 @@ export default function Leads() {
   const { data: leads, isLoading } = useQuery({
     queryKey: ["leads", projectFilter],
     queryFn: async () => {
-      let q = supabase.from("leads").select("*, projects(name), lead_by_profile:profiles!leads_lead_by_fkey(full_name)").order("created_at", { ascending: false });
+      let q = supabase.from("leads").select("*, projects(name)").order("created_at", { ascending: false });
       if (projectFilter !== "all") q = q.eq("project_id", projectFilter);
       const { data, error } = await q;
       if (error) throw error;
@@ -126,7 +126,7 @@ export default function Leads() {
                   <TableCell>{lead.place}</TableCell>
                   <TableCell>{lead.mobile}</TableCell>
                   <TableCell>{lead.review}</TableCell>
-                  <TableCell>{(lead as any).lead_by_profile?.full_name || "—"}</TableCell>
+                  <TableCell>—</TableCell>
                   <TableCell>{(lead as any).projects?.name || "—"}</TableCell>
                   {role === "admin" && (
                     <TableCell>

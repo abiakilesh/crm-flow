@@ -15,7 +15,7 @@ export default function CallTracking() {
   const { data: logs, isLoading } = useQuery({
     queryKey: ["call_logs", projectFilter],
     queryFn: async () => {
-      let q = supabase.from("call_logs").select("*, projects(name), profiles:profiles!call_logs_caller_id_fkey(full_name)").order("call_date", { ascending: false });
+      let q = supabase.from("call_logs").select("*, projects(name)").order("call_date", { ascending: false });
       if (projectFilter !== "all") q = q.eq("project_id", projectFilter);
       const { data, error } = await q;
       if (error) throw error;
@@ -28,7 +28,7 @@ export default function CallTracking() {
     const headers = ["Date", "Time", "Duration (min)", "Phone", "Status", "Project", "Caller", "Notes"];
     const rows = logs.map((l) => [
       l.call_date, l.call_time, l.duration_minutes, l.phone_number, l.status,
-      (l as any).projects?.name || "", (l as any).profiles?.full_name || "", l.notes,
+      (l as any).projects?.name || "", "", l.notes,
     ]);
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -81,7 +81,7 @@ export default function CallTracking() {
                     <Badge variant={log.status === "completed" ? "default" : "destructive"}>{log.status}</Badge>
                   </TableCell>
                   <TableCell>{(log as any).projects?.name || "—"}</TableCell>
-                  <TableCell>{(log as any).profiles?.full_name || "—"}</TableCell>
+                  <TableCell>—</TableCell>
                   <TableCell className="max-w-[200px] truncate">{log.notes}</TableCell>
                 </TableRow>
               ))
