@@ -7,19 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, UserPlus } from "lucide-react";
 
 export default function Settings() {
-  const { role } = useAuth();
+  const { role, session } = useAuth();
   const queryClient = useQueryClient();
 
   // Project management
   const [projectDialog, setProjectDialog] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [projectDesc, setProjectDesc] = useState("");
+
+  // User creation
+  const [userDialog, setUserDialog] = useState(false);
+  const [userForm, setUserForm] = useState({ email: "", password: "", full_name: "", phone: "", role: "member" as string });
 
   const { data: projects } = useQuery({
     queryKey: ["projects-all"],
@@ -61,10 +67,56 @@ export default function Settings() {
   const { data: users } = useQuery({
     queryKey: ["all-users"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*, user_roles(role)");
-      if (error) throw error;
-      return data;
+      const [profilesRes, rolesRes] = await Promise.all([
+        supabase.from("profiles").select("*"),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      if (profilesRes.error) throw profilesRes.error;
+      const roleMap = new Map((rolesRes.data || []).map(r => [r.user_id, r.role]));
+      return (profilesRes.data || []).map(p => ({ ...p, role: roleMap.get(p.user_id) || null }));
     },
+  });
+
+  const createUser = useMutation({
+    mutationFn: async () => {
+      if (userForm.password.length !== 6 || !/^\d{6}$/.test(userForm.password)) {
+        throw new Error("Password must be exactly 6 digits");
+      }
+      const res = await supabase.functions.invoke("manage-users", {
+        body: {
+          action: "create",
+          email: userForm.email,
+          password: userForm.password,
+          full_name: userForm.full_name,
+          phone: userForm.phone,
+          role: userForm.role,
+        },
+      });
+      if (res.error) throw res.error;
+      if (res.data?.error) throw new Error(res.data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-users"] });
+      setUserDialog(false);
+      setUserForm({ email: "", password: "", full_name: "", phone: "", role: "member" });
+      toast.success("User created!");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await supabase.functions.invoke("manage-users", {
+        body: { action: "delete", user_id: userId },
+      });
+      if (res.error) throw res.error;
+      if (res.data?.error) throw new Error(res.data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-users"] });
+      toast.success("User deleted");
+    },
+    onError: (err: any) => toast.error(err.message),
   });
 
   if (role !== "admin") return <div className="text-muted-foreground">Access denied</div>;
@@ -122,7 +174,43 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-4">
-          <h3 className="text-lg font-semibold">Users</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Users</h3>
+            <Dialog open={userDialog} onOpenChange={setUserDialog}>
+              <DialogTrigger asChild><Button><UserPlus className="mr-2 h-4 w-4" /> Create User</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Create New User</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <Input placeholder="Full Name" value={userForm.full_name} onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })} />
+                  <Input type="email" placeholder="Email" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} />
+                  <Input placeholder="Phone" value={userForm.phone} onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })} />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Password (6 digits)</label>
+                    <div className="flex justify-center">
+                      <InputOTP maxLength={6} value={userForm.password} onChange={(val) => setUserForm({ ...userForm, password: val })} pattern="^[0-9]*$">
+                        <InputOTPGroup>
+                          {[0, 1, 2, 3, 4, 5].map((i) => (
+                            <InputOTPSlot key={i} index={i} />
+                          ))}
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                  </div>
+                  <Select value={userForm.role} onValueChange={(val) => setUserForm({ ...userForm, role: val })}>
+                    <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="member">Member</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button className="w-full" onClick={() => createUser.mutate()} disabled={createUser.isPending}>
+                    {createUser.isPending ? "Creating..." : "Create User"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
@@ -131,18 +219,24 @@ export default function Settings() {
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(users || []).map((u) => (
+              {(users || []).map((u: any) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>{u.phone || "—"}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="capitalize">
-                        {(u as any).user_roles?.[0]?.role || "No role"}
+                        {u.role || "No role"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => deleteUser.mutate(u.user_id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
