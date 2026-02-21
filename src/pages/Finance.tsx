@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   Paid: "bg-green-100 text-green-800 border-green-300",
@@ -21,6 +21,8 @@ export default function Finance() {
   const queryClient = useQueryClient();
   const [projectFilter, setProjectFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ company_name: "", total_amount: "", share_amount: "", paid_status: "Processing" });
 
   const { data: records, isLoading } = useQuery({
@@ -55,6 +57,27 @@ export default function Finance() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const updateRecord = useMutation({
+    mutationFn: async () => {
+      if (!editId) return;
+      const { error } = await supabase.from("finance").update({
+        company_name: form.company_name,
+        total_amount: parseFloat(form.total_amount) || 0,
+        share_amount: parseFloat(form.share_amount) || 0,
+        paid_status: form.paid_status,
+      }).eq("id", editId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+      setEditDialogOpen(false);
+      setEditId(null);
+      setForm({ company_name: "", total_amount: "", share_amount: "", paid_status: "Processing" });
+      toast.success("Record updated!");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from("finance").update({ paid_status: status }).eq("id", id);
@@ -78,6 +101,17 @@ export default function Finance() {
     },
     onError: (err: any) => toast.error(err.message),
   });
+
+  const openEdit = (rec: any) => {
+    setEditId(rec.id);
+    setForm({
+      company_name: rec.company_name,
+      total_amount: String(rec.total_amount),
+      share_amount: String(rec.share_amount),
+      paid_status: rec.paid_status,
+    });
+    setEditDialogOpen(true);
+  };
 
   const statuses = ["Paid", "Processing", "On Practically"];
 
@@ -106,6 +140,24 @@ export default function Finance() {
           )}
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Finance Record</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Company Name" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
+            <Input placeholder="Total Amount" type="number" value={form.total_amount} onChange={(e) => setForm({ ...form, total_amount: e.target.value })} />
+            <Input placeholder="Share Amount" type="number" value={form.share_amount} onChange={(e) => setForm({ ...form, share_amount: e.target.value })} />
+            <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.paid_status} onChange={(e) => setForm({ ...form, paid_status: e.target.value })}>
+              {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <Button className="w-full" onClick={() => updateRecord.mutate()} disabled={updateRecord.isPending}>
+              {updateRecord.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="rounded-lg border">
         <Table>
@@ -151,9 +203,14 @@ export default function Finance() {
                   <TableCell>{(rec as any).projects?.name || "—"}</TableCell>
                   {role === "admin" && (
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => deleteRecord.mutate(rec.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(rec)}>
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteRecord.mutate(rec.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>

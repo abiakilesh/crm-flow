@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Search } from "lucide-react";
+import { Plus, Trash2, Search, Pencil } from "lucide-react";
 
 export default function Leads() {
   const { role, user } = useAuth();
@@ -16,6 +16,8 @@ export default function Leads() {
   const [projectFilter, setProjectFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ customer_name: "", place: "", mobile: "", review: "" });
 
   const { data: leads, isLoading } = useQuery({
@@ -51,6 +53,27 @@ export default function Leads() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const updateLead = useMutation({
+    mutationFn: async () => {
+      if (!editId) return;
+      const { error } = await supabase.from("leads").update({
+        customer_name: form.customer_name,
+        place: form.place,
+        mobile: form.mobile,
+        review: form.review,
+      }).eq("id", editId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      setEditDialogOpen(false);
+      setEditId(null);
+      setForm({ customer_name: "", place: "", mobile: "", review: "" });
+      toast.success("Lead updated!");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const deleteLead = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("leads").delete().eq("id", id);
@@ -62,6 +85,12 @@ export default function Leads() {
     },
     onError: (err: any) => toast.error(err.message),
   });
+
+  const openEdit = (lead: any) => {
+    setEditId(lead.id);
+    setForm({ customer_name: lead.customer_name, place: lead.place || "", mobile: lead.mobile || "", review: lead.review || "" });
+    setEditDialogOpen(true);
+  };
 
   const filtered = (leads || []).filter(
     (l) => !search || l.customer_name?.toLowerCase().includes(search.toLowerCase()) || l.lead_id?.toLowerCase().includes(search.toLowerCase())
@@ -97,6 +126,22 @@ export default function Leads() {
         </div>
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Lead</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Customer Name" value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} />
+            <Input placeholder="Place" value={form.place} onChange={(e) => setForm({ ...form, place: e.target.value })} />
+            <Input placeholder="Mobile Number" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+            <Input placeholder="Review" value={form.review} onChange={(e) => setForm({ ...form, review: e.target.value })} />
+            <Button className="w-full" onClick={() => updateLead.mutate()} disabled={updateLead.isPending}>
+              {updateLead.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
@@ -130,9 +175,14 @@ export default function Leads() {
                   <TableCell>{(lead as any).projects?.name || "—"}</TableCell>
                   {role === "admin" && (
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => deleteLead.mutate(lead.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(lead)}>
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteLead.mutate(lead.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>

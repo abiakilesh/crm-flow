@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Phone, Upload, Search } from "lucide-react";
+import { Plus, Phone, Upload, Search, Pencil, Trash2 } from "lucide-react";
 
 export default function Sales() {
   const { role, user } = useAuth();
@@ -16,6 +16,8 @@ export default function Sales() {
   const [projectFilter, setProjectFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [callLogOpen, setCallLogOpen] = useState(false);
   const [callLogForm, setCallLogForm] = useState({ duration_minutes: "", status: "completed", phone_number: "", notes: "" });
   const [form, setForm] = useState({ customer_name: "", follow_up_1: "", follow_up_2: "" });
@@ -62,6 +64,38 @@ export default function Sales() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const updateSale = useMutation({
+    mutationFn: async () => {
+      if (!editId) return;
+      const { error } = await supabase.from("sales").update({
+        customer_name: form.customer_name,
+        follow_up_1: form.follow_up_1,
+        follow_up_2: form.follow_up_2,
+      }).eq("id", editId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      setEditDialogOpen(false);
+      setEditId(null);
+      setForm({ customer_name: "", follow_up_1: "", follow_up_2: "" });
+      toast.success("Sale updated!");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteSale = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("sales").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      toast.success("Sale deleted");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const addCallLog = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("call_logs").insert({
@@ -83,10 +117,15 @@ export default function Sales() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const openEdit = (sale: any) => {
+    setEditId(sale.id);
+    setForm({ customer_name: sale.customer_name, follow_up_1: sale.follow_up_1 || "", follow_up_2: sale.follow_up_2 || "" });
+    setEditDialogOpen(true);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Simple CSV/text parsing for uploaded call lists
     const text = await file.text();
     const lines = text.split("\n").filter(Boolean);
     const rows = lines.slice(1).map((line) => {
@@ -136,6 +175,21 @@ export default function Sales() {
         </div>
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Sale</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Customer Name" value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} />
+            <Input placeholder="Follow Up 1" value={form.follow_up_1} onChange={(e) => setForm({ ...form, follow_up_1: e.target.value })} />
+            <Input placeholder="Follow Up 2" value={form.follow_up_2} onChange={(e) => setForm({ ...form, follow_up_2: e.target.value })} />
+            <Button className="w-full" onClick={() => updateSale.mutate()} disabled={updateSale.isPending}>
+              {updateSale.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Sales Table */}
       <div className="rounded-lg border">
         <Table>
@@ -148,13 +202,14 @@ export default function Sales() {
               <TableHead>Follow Up 2</TableHead>
               <TableHead>Call</TableHead>
               <TableHead>Project</TableHead>
+              {role === "admin" && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : (sales || []).length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No sales records</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No sales records</TableCell></TableRow>
             ) : (
               (sales || []).map((sale, i) => (
                 <TableRow key={sale.id}>
@@ -174,6 +229,18 @@ export default function Sales() {
                     ) : "—"}
                   </TableCell>
                   <TableCell>{(sale as any).projects?.name || "—"}</TableCell>
+                  {role === "admin" && (
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(sale)}>
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteSale.mutate(sale.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
