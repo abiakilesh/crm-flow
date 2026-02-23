@@ -34,8 +34,7 @@ export default function Index() {
 
   const defaultCredentials = [
     { label: "Admin", email: "admin@jobcrm.com", password: "123456" },
-    { label: "Manager", email: "manager@jobcrm.com", password: "123456" },
-    { label: "Member", email: "member@jobcrm.com", password: "123456" },
+    { label: "Client", email: "benchmark1@gmail.com", password: "123456" },
   ];
 
   return (
