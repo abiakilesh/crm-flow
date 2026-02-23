@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, TrendingUp, DollarSign, Phone, BarChart3, Settings, LogOut, Briefcase } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, DollarSign, Phone, BarChart3, Settings, LogOut, Briefcase, List } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -17,19 +17,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "member"] as const },
-  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "manager", "member"] as const },
-  { title: "Sales", url: "/sales", icon: TrendingUp, roles: ["admin", "manager", "member"] as const },
-  { title: "Finance", url: "/finance", icon: DollarSign, roles: ["admin", "manager", "member"] as const },
-  { title: "Call Tracking", url: "/call-tracking", icon: Phone, roles: ["admin", "manager", "member"] as const },
-  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin", "manager", "member"] as const },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "client"] as const },
+  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "client"] as const },
+  { title: "Sales", url: "/sales", icon: TrendingUp, roles: ["admin", "client"] as const },
+  { title: "Finance", url: "/finance", icon: DollarSign, roles: ["admin", "client"] as const },
+  { title: "Call Tracking", url: "/call-tracking", icon: Phone, roles: ["admin", "client"] as const },
+  { title: "Call List", url: "/call-list", icon: List, roles: ["admin", "client"] as const },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin"] as const },
   { title: "Settings", url: "/settings", icon: Settings, roles: ["admin"] as const },
 ];
 
 const roleBadgeColors: Record<string, string> = {
   admin: "bg-red-500/20 text-red-300 border-red-500/30",
-  manager: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  member: "bg-green-500/20 text-green-300 border-green-500/30",
+  client: "bg-blue-500/20 text-blue-300 border-blue-500/30",
 };
 
 export function AppSidebar() {

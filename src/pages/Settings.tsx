@@ -25,7 +25,7 @@ export default function Settings() {
 
   // User creation
   const [userDialog, setUserDialog] = useState(false);
-  const [userForm, setUserForm] = useState({ email: "", password: "", full_name: "", phone: "", role: "member" as string });
+  const [userForm, setUserForm] = useState({ email: "", password: "", full_name: "", phone: "", role: "client" as string });
 
   const { data: projects } = useQuery({
     queryKey: ["projects-all"],
@@ -98,7 +98,7 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-users"] });
       setUserDialog(false);
-      setUserForm({ email: "", password: "", full_name: "", phone: "", role: "member" });
+      setUserForm({ email: "", password: "", full_name: "", phone: "", role: "client" });
       toast.success("User created!");
     },
     onError: (err: any) => toast.error(err.message),
@@ -200,8 +200,7 @@ export default function Settings() {
                     <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="client">Client</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button className="w-full" onClick={() => createUser.mutate()} disabled={createUser.isPending}>

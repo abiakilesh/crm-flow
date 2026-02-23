@@ -7,9 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import Index from "./pages/Index";
-import LoginAdmin from "./pages/LoginAdmin";
-import LoginManager from "./pages/LoginManager";
-import LoginMember from "./pages/LoginMember";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
@@ -17,13 +14,14 @@ import Leads from "./pages/Leads";
 import Sales from "./pages/Sales";
 import Finance from "./pages/Finance";
 import CallTracking from "./pages/CallTracking";
+import CallList from "./pages/CallList";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedDashboard({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: ("admin" | "manager" | "member")[] }) {
+function ProtectedDashboard({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: ("admin" | "manager" | "member" | "client")[] }) {
   return (
     <ProtectedRoute allowedRoles={allowedRoles}>
       <DashboardLayout>{children}</DashboardLayout>
@@ -40,9 +38,6 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/login/admin" element={<LoginAdmin />} />
-            <Route path="/login/manager" element={<LoginManager />} />
-            <Route path="/login/member" element={<LoginMember />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedDashboard><Dashboard /></ProtectedDashboard>} />
@@ -50,7 +45,8 @@ const App = () => (
             <Route path="/sales" element={<ProtectedDashboard><Sales /></ProtectedDashboard>} />
             <Route path="/finance" element={<ProtectedDashboard><Finance /></ProtectedDashboard>} />
             <Route path="/call-tracking" element={<ProtectedDashboard><CallTracking /></ProtectedDashboard>} />
-            <Route path="/analytics" element={<ProtectedDashboard><Analytics /></ProtectedDashboard>} />
+            <Route path="/call-list" element={<ProtectedDashboard><CallList /></ProtectedDashboard>} />
+            <Route path="/analytics" element={<ProtectedDashboard allowedRoles={["admin"]}><Analytics /></ProtectedDashboard>} />
             <Route path="/settings" element={<ProtectedDashboard allowedRoles={["admin"]}><Settings /></ProtectedDashboard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
