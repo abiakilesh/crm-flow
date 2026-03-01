@@ -79,8 +79,11 @@ export default function Settings() {
 
   const createUser = useMutation({
     mutationFn: async () => {
-      if (userForm.password.length !== 6 || !/^\d{6}$/.test(userForm.password)) {
-        throw new Error("Password must be exactly 6 digits");
+      if (userForm.password.length < 8) {
+        throw new Error("Password must be at least 8 characters");
+      }
+      if (!/[A-Z]/.test(userForm.password) || !/[a-z]/.test(userForm.password) || !/[0-9]/.test(userForm.password)) {
+        throw new Error("Password must contain uppercase, lowercase, and a number");
       }
       const res = await supabase.functions.invoke("manage-users", {
         body: {
