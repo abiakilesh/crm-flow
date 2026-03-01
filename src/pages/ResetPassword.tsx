@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 
 export default function ResetPassword() {
@@ -14,13 +14,11 @@ export default function ResetPassword() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Check for recovery event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setReady(true);
       }
     });
-    // Also check hash params
     if (window.location.hash.includes("type=recovery")) {
       setReady(true);
     }
@@ -29,8 +27,12 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length !== 6 || !/^\d{6}$/.test(password)) {
-      toast.error("Password must be exactly 6 digits");
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      toast.error("Password must contain uppercase, lowercase, and a number");
       return;
     }
     if (password !== confirm) {
@@ -67,33 +69,17 @@ export default function ResetPassword() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Set New Password</CardTitle>
-          <CardDescription>Enter a new 6-digit numeric password</CardDescription>
+          <CardDescription>Enter a new password (min 8 chars, mixed case + number)</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">New Password</label>
-              <div className="flex justify-center">
-                <InputOTP maxLength={6} value={password} onChange={setPassword} pattern="^[0-9]*$">
-                  <InputOTPGroup>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <InputOTPSlot key={i} index={i} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
+              <Input type="password" placeholder="Enter new password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Confirm Password</label>
-              <div className="flex justify-center">
-                <InputOTP maxLength={6} value={confirm} onChange={setConfirm} pattern="^[0-9]*$">
-                  <InputOTPGroup>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <InputOTPSlot key={i} index={i} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
+              <Input type="password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={8} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Updating..." : "Update Password"}

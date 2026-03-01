@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+
 import { toast } from "sonner";
 import { Plus, Trash2, UserPlus } from "lucide-react";
 
@@ -79,8 +79,11 @@ export default function Settings() {
 
   const createUser = useMutation({
     mutationFn: async () => {
-      if (userForm.password.length !== 6 || !/^\d{6}$/.test(userForm.password)) {
-        throw new Error("Password must be exactly 6 digits");
+      if (userForm.password.length < 8) {
+        throw new Error("Password must be at least 8 characters");
+      }
+      if (!/[A-Z]/.test(userForm.password) || !/[a-z]/.test(userForm.password) || !/[0-9]/.test(userForm.password)) {
+        throw new Error("Password must contain uppercase, lowercase, and a number");
       }
       const res = await supabase.functions.invoke("manage-users", {
         body: {
@@ -185,16 +188,8 @@ export default function Settings() {
                   <Input type="email" placeholder="Email" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} />
                   <Input placeholder="Phone" value={userForm.phone} onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })} />
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Password (6 digits)</label>
-                    <div className="flex justify-center">
-                      <InputOTP maxLength={6} value={userForm.password} onChange={(val) => setUserForm({ ...userForm, password: val })} pattern="^[0-9]*$">
-                        <InputOTPGroup>
-                          {[0, 1, 2, 3, 4, 5].map((i) => (
-                            <InputOTPSlot key={i} index={i} />
-                          ))}
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
+                    <label className="text-sm font-medium">Password (min 8 chars, mixed case + number)</label>
+                    <Input type="password" placeholder="Enter password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} minLength={8} />
                   </div>
                   <Select value={userForm.role} onValueChange={(val) => setUserForm({ ...userForm, role: val })}>
                     <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
