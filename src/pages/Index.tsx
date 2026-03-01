@@ -32,11 +32,6 @@ export default function Index() {
     }
   };
 
-  const defaultCredentials = [
-    { label: "Admin", email: "admin@jobcrm.com", password: "123456" },
-    { label: "Client", email: "benchmark1@gmail.com", password: "123456" },
-  ];
-
   return (
     <div className="flex min-h-screen bg-muted">
       {/* Left side - Illustration */}
@@ -83,6 +78,7 @@ export default function Index() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pr-10 h-12"
                 required
+                minLength={8}
               />
               <Lock className="absolute right-3 top-3.5 h-5 w-5 text-muted-foreground" />
             </div>
@@ -93,24 +89,6 @@ export default function Index() {
               </Button>
             </div>
           </form>
-
-          {/* Default credentials */}
-          <div className="border-t pt-4 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Default Credentials</p>
-            <div className="grid gap-2">
-              {defaultCredentials.map((cred) => (
-                <button
-                  key={cred.label}
-                  type="button"
-                  onClick={() => { setEmail(cred.email); setPassword(cred.password); }}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-sm"
-                >
-                  <span className="font-medium text-foreground">{cred.label}</span>
-                  <span className="text-muted-foreground text-xs">{cred.email} / {cred.password}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

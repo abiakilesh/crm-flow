@@ -188,16 +188,8 @@ export default function Settings() {
                   <Input type="email" placeholder="Email" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} />
                   <Input placeholder="Phone" value={userForm.phone} onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })} />
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Password (6 digits)</label>
-                    <div className="flex justify-center">
-                      <InputOTP maxLength={6} value={userForm.password} onChange={(val) => setUserForm({ ...userForm, password: val })} pattern="^[0-9]*$">
-                        <InputOTPGroup>
-                          {[0, 1, 2, 3, 4, 5].map((i) => (
-                            <InputOTPSlot key={i} index={i} />
-                          ))}
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
+                    <label className="text-sm font-medium">Password (min 8 chars, mixed case + number)</label>
+                    <Input type="password" placeholder="Enter password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} minLength={8} />
                   </div>
                   <Select value={userForm.role} onValueChange={(val) => setUserForm({ ...userForm, role: val })}>
                     <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
