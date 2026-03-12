@@ -15,6 +15,8 @@ import Sales from "./pages/Sales";
 import Finance from "./pages/Finance";
 import CallTracking from "./pages/CallTracking";
 import CallList from "./pages/CallList";
+import AdFundPayment from "./pages/AdFundPayment";
+import MetaLead from "./pages/MetaLead";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
