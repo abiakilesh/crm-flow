@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, TrendingUp, DollarSign, Phone, BarChart3, Settings, LogOut, Briefcase, List } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, DollarSign, Phone, BarChart3, Settings, LogOut, Briefcase, List, Wallet, Megaphone } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
