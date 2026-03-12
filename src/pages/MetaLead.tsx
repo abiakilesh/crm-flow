@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Download, Trash2, Eye } from "lucide-react";
+import { Plus, Download, Trash2, Eye, Upload } from "lucide-react";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -20,11 +20,40 @@ export default function MetaLead() {
   const [projectFilter, setProjectFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [viewItem, setViewItem] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     client_name: "", campaign_name: "", conversion: "", month: "", report_date: "",
     result: "", reach: "", impression: "", cost_per_result: "", total_amount: "",
     client_logo_url: "",
   });
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("client-logos")
+        .upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage
+        .from("client-logos")
+        .getPublicUrl(fileName);
+      setForm({ ...form, client_logo_url: publicUrl });
+      toast.success("Logo uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const { data: records, isLoading } = useQuery({
     queryKey: ["meta_leads", projectFilter],
@@ -88,126 +117,153 @@ export default function MetaLead() {
     canvas.height = 600;
     const ctx = canvas.getContext("2d")!;
 
-    // Background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, 800, 600);
+    const drawReport = () => {
+      // Background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 800, 600);
 
-    // Header bar
-    ctx.fillStyle = "#6b2121";
-    ctx.fillRect(0, 0, 800, 50);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 20px Arial";
-    ctx.fillText("ADS REPORT", 320, 33);
+      // Header bar
+      ctx.fillStyle = "#6b2121";
+      ctx.fillRect(0, 0, 800, 50);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px Arial";
+      ctx.fillText("ADS REPORT", 320, 33);
 
-    // Meta logo text
-    ctx.fillStyle = "#0081fb";
-    ctx.font = "bold 28px Arial";
-    ctx.fillText("∞ Meta", 30, 90);
+      // Meta logo text
+      ctx.fillStyle = "#0081fb";
+      ctx.font = "bold 28px Arial";
+      ctx.fillText("∞ Meta", 30, 90);
 
-    // Month / Date
-    ctx.fillStyle = "#333333";
-    ctx.font = "14px Arial";
-    ctx.fillText(`MONTH: ${record.month}`, 30, 130);
-    ctx.fillText(`DATE: ${record.report_date}`, 250, 130);
+      // Month / Date
+      ctx.fillStyle = "#333333";
+      ctx.font = "14px Arial";
+      ctx.fillText(`MONTH: ${record.month}`, 30, 130);
+      ctx.fillText(`DATE: ${record.report_date}`, 250, 130);
 
-    // Client Name
-    ctx.fillStyle = "#6b2121";
-    ctx.font = "bold 16px Arial";
-    ctx.fillText("CLIENT NAME", 30, 165);
-    ctx.fillStyle = "#000000";
-    ctx.font = "bold 22px Arial";
-    ctx.fillText(record.client_name.toUpperCase(), 30, 195);
+      // Client Name
+      ctx.fillStyle = "#6b2121";
+      ctx.font = "bold 16px Arial";
+      ctx.fillText("CLIENT NAME", 30, 165);
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 22px Arial";
+      ctx.fillText(record.client_name.toUpperCase(), 30, 195);
 
-    // Campaign table
-    const tableY = 220;
-    ctx.fillStyle = "#6b2121";
-    ctx.fillRect(30, tableY, 350, 30);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 13px Arial";
-    ctx.fillText("CAMPAIGN NAME", 45, tableY + 20);
-    ctx.fillText("CONVERSION", 230, tableY + 20);
-
-    ctx.fillStyle = "#d4a0a0";
-    ctx.fillRect(30, tableY + 30, 350, 28);
-    ctx.fillStyle = "#333333";
-    ctx.font = "13px Arial";
-    ctx.fillText(record.campaign_name, 45, tableY + 50);
-    ctx.fillText(record.conversion, 230, tableY + 50);
-
-    // Result
-    ctx.fillStyle = "#6b2121";
-    ctx.fillRect(30, tableY + 75, 350, 28);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 14px Arial";
-    ctx.fillText("RESULT", 160, tableY + 94);
-    ctx.fillStyle = "#333333";
-    ctx.fillRect(30, tableY + 103, 350, 35);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 24px Arial";
-    ctx.fillText(String(record.result), 180, tableY + 130);
-
-    // Reach & Impression
-    const metricsY = tableY + 155;
-    ctx.fillStyle = "#555";
-    ctx.font = "bold 12px Arial";
-    ctx.fillText("REACH", 80, metricsY);
-    ctx.fillText("IMPRESSION", 230, metricsY);
-    
-    ctx.fillStyle = "#6b2121";
-    ctx.fillRect(30, metricsY + 8, 160, 35);
-    ctx.fillRect(210, metricsY + 8, 170, 35);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 20px Arial";
-    ctx.fillText(String(record.reach), 80, metricsY + 32);
-    ctx.fillText(String(record.impression), 260, metricsY + 32);
-
-    // Pie chart
-    const cx = 600, cy = 300, r = 120;
-    const total = record.reach + record.impression + record.result;
-    const slices = [
-      { val: record.reach, color: "#8b0000", label: "REACH" },
-      { val: record.impression, color: "#cd5c5c", label: "IMPRESSION" },
-      { val: record.result, color: "#e8a0a0", label: "RESULT" },
-    ];
-    let startAngle = -Math.PI / 2;
-    slices.forEach((s) => {
-      const angle = (s.val / (total || 1)) * 2 * Math.PI;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, r, startAngle, startAngle + angle);
-      ctx.fillStyle = s.color;
-      ctx.fill();
-      startAngle += angle;
-    });
-
-    // Legend
-    slices.forEach((s, i) => {
-      const ly = 440 + i * 22;
-      ctx.fillStyle = s.color;
-      ctx.fillRect(520, ly, 14, 14);
-      ctx.fillStyle = "#333";
-      ctx.font = "12px Arial";
-      ctx.fillText(s.label, 540, ly + 12);
-    });
-
-    // Cost per result & total (admin only)
-    if (isAdmin) {
-      const bottomY = 520;
-      ctx.fillStyle = "#333";
+      // Campaign table
+      const tableY = 220;
+      ctx.fillStyle = "#6b2121";
+      ctx.fillRect(30, tableY, 350, 30);
+      ctx.fillStyle = "#ffffff";
       ctx.font = "bold 13px Arial";
-      ctx.fillText(`Cost Per Result: ₹ ${Number(record.cost_per_result).toFixed(2)}`, 30, bottomY);
-      ctx.fillText(`Total Amount: ₹ ${Number(record.total_amount).toFixed(2)}`, 30, bottomY + 22);
-    }
+      ctx.fillText("CAMPAIGN NAME", 45, tableY + 20);
+      ctx.fillText("CONVERSION", 230, tableY + 20);
 
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `meta_report_${record.client_name}_${record.report_date}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+      ctx.fillStyle = "#d4a0a0";
+      ctx.fillRect(30, tableY + 30, 350, 28);
+      ctx.fillStyle = "#333333";
+      ctx.font = "13px Arial";
+      ctx.fillText(record.campaign_name, 45, tableY + 50);
+      ctx.fillText(record.conversion, 230, tableY + 50);
+
+      // Result
+      ctx.fillStyle = "#6b2121";
+      ctx.fillRect(30, tableY + 75, 350, 28);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 14px Arial";
+      ctx.fillText("RESULT", 160, tableY + 94);
+      ctx.fillStyle = "#333333";
+      ctx.fillRect(30, tableY + 103, 350, 35);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 24px Arial";
+      ctx.fillText(String(record.result), 180, tableY + 130);
+
+      // Reach & Impression
+      const metricsY = tableY + 155;
+      ctx.fillStyle = "#555";
+      ctx.font = "bold 12px Arial";
+      ctx.fillText("REACH", 80, metricsY);
+      ctx.fillText("IMPRESSION", 230, metricsY);
+      
+      ctx.fillStyle = "#6b2121";
+      ctx.fillRect(30, metricsY + 8, 160, 35);
+      ctx.fillRect(210, metricsY + 8, 170, 35);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px Arial";
+      ctx.fillText(String(record.reach), 80, metricsY + 32);
+      ctx.fillText(String(record.impression), 260, metricsY + 32);
+
+      // Pie chart
+      const cx = 600, cy = 300, r = 120;
+      const total = record.reach + record.impression + record.result;
+      const slices = [
+        { val: record.reach, color: "#8b0000", label: "REACH" },
+        { val: record.impression, color: "#cd5c5c", label: "IMPRESSION" },
+        { val: record.result, color: "#e8a0a0", label: "RESULT" },
+      ];
+      let startAngle = -Math.PI / 2;
+      slices.forEach((s) => {
+        const angle = (s.val / (total || 1)) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, startAngle + angle);
+        ctx.fillStyle = s.color;
+        ctx.fill();
+        startAngle += angle;
+      });
+
+      // Legend
+      slices.forEach((s, i) => {
+        const ly = 440 + i * 22;
+        ctx.fillStyle = s.color;
+        ctx.fillRect(520, ly, 14, 14);
+        ctx.fillStyle = "#333";
+        ctx.font = "12px Arial";
+        ctx.fillText(s.label, 540, ly + 12);
+      });
+
+      // Cost per result & total (admin only)
+      if (isAdmin) {
+        const bottomY = 520;
+        ctx.fillStyle = "#333";
+        ctx.font = "bold 13px Arial";
+        ctx.fillText(`Cost Per Result: ₹ ${Number(record.cost_per_result).toFixed(2)}`, 30, bottomY);
+        ctx.fillText(`Total Amount: ₹ ${Number(record.total_amount).toFixed(2)}`, 30, bottomY + 22);
+      }
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `meta_report_${record.client_name}_${record.report_date}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    };
+
+    // If client logo exists, load and draw it
+    if (record.client_logo_url) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        drawReport();
+        // Draw logo in top-right area
+        const logoSize = 50;
+        ctx.drawImage(img, 740 - logoSize, 60, logoSize, logoSize);
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `meta_report_${record.client_name}_${record.report_date}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      };
+      img.onerror = () => drawReport();
+      img.src = record.client_logo_url;
+    } else {
+      drawReport();
+    }
   };
 
   return (
@@ -230,8 +286,35 @@ export default function MetaLead() {
                   className="space-y-3"
                 >
                   <div className="space-y-1">
-                    <label className="text-sm font-medium">Client Logo URL</label>
-                    <Input placeholder="https://..." value={form.client_logo_url} onChange={(e) => setForm({ ...form, client_logo_url: e.target.value })} />
+                    <label className="text-sm font-medium">Client Logo</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {uploading ? "Uploading..." : "Upload Logo"}
+                      </Button>
+                      {form.client_logo_url && (
+                        <img src={form.client_logo_url} alt="Logo" className="h-8 w-8 object-contain rounded border" />
+                      )}
+                    </div>
+                    <Input
+                      placeholder="Or paste URL..."
+                      value={form.client_logo_url}
+                      onChange={(e) => setForm({ ...form, client_logo_url: e.target.value })}
+                      className="mt-1"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
@@ -305,6 +388,9 @@ export default function MetaLead() {
           {viewItem && (
             <div className="space-y-3">
               <div className="bg-[hsl(var(--primary)/0.1)] rounded-lg p-4 space-y-2">
+                {viewItem.client_logo_url && (
+                  <img src={viewItem.client_logo_url} alt="Client Logo" className="h-12 w-auto object-contain" />
+                )}
                 <p className="text-sm"><span className="font-semibold">Month:</span> {viewItem.month} &nbsp; <span className="font-semibold">Date:</span> {viewItem.report_date}</p>
                 <p className="text-lg font-bold">{viewItem.client_name}</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -346,6 +432,7 @@ export default function MetaLead() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">SNo</TableHead>
+                <TableHead>Logo</TableHead>
                 <TableHead>Client Name</TableHead>
                 <TableHead>Campaign</TableHead>
                 <TableHead>Month</TableHead>
@@ -360,16 +447,23 @@ export default function MetaLead() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={role === "admin" ? 10 : 8} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+                  <TableCell colSpan={role === "admin" ? 11 : 9} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
                 </TableRow>
               ) : (records || []).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={role === "admin" ? 10 : 8} className="text-center py-8 text-muted-foreground">No records</TableCell>
+                  <TableCell colSpan={role === "admin" ? 11 : 9} className="text-center py-8 text-muted-foreground">No records</TableCell>
                 </TableRow>
               ) : (
                 (records || []).map((r, i) => (
                   <TableRow key={r.id}>
                     <TableCell>{i + 1}</TableCell>
+                    <TableCell>
+                      {r.client_logo_url ? (
+                        <img src={r.client_logo_url} alt="" className="h-8 w-8 object-contain rounded" />
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{r.client_name}</TableCell>
                     <TableCell>{r.campaign_name}</TableCell>
                     <TableCell>{r.month} {r.report_date}</TableCell>
