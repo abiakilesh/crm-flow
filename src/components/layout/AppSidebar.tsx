@@ -23,6 +23,8 @@ const navItems = [
   { title: "Finance", url: "/finance", icon: DollarSign, roles: ["admin", "client"] as const },
   { title: "Call Tracking", url: "/call-tracking", icon: Phone, roles: ["admin", "client"] as const },
   { title: "Call List", url: "/call-list", icon: List, roles: ["admin", "client"] as const },
+  { title: "Ad Fund Payment", url: "/ad-fund-payment", icon: Wallet, roles: ["admin", "client"] as const },
+  { title: "Meta Lead", url: "/meta-lead", icon: Megaphone, roles: ["admin", "client"] as const },
   { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin"] as const },
   { title: "Settings", url: "/settings", icon: Settings, roles: ["admin"] as const },
 ];
