@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_fund_payments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          paid_amount: number
+          paid_date: string
+          project_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_amount?: number
+          paid_date: string
+          project_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          paid_amount?: number
+          paid_date?: string
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_fund_payments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_lists: {
         Row: {
           created_at: string
@@ -202,6 +237,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "leads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_leads: {
+        Row: {
+          campaign_name: string
+          client_logo_url: string | null
+          client_name: string
+          conversion: string
+          cost_per_result: number
+          created_at: string
+          created_by: string | null
+          id: string
+          impression: number
+          month: string
+          project_id: string | null
+          reach: number
+          report_date: string
+          result: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          campaign_name?: string
+          client_logo_url?: string | null
+          client_name: string
+          conversion?: string
+          cost_per_result?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          impression?: number
+          month?: string
+          project_id?: string | null
+          reach?: number
+          report_date?: string
+          result?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          campaign_name?: string
+          client_logo_url?: string | null
+          client_name?: string
+          conversion?: string
+          cost_per_result?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          impression?: number
+          month?: string
+          project_id?: string | null
+          reach?: number
+          report_date?: string
+          result?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_leads_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"

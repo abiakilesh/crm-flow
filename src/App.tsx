@@ -15,6 +15,8 @@ import Sales from "./pages/Sales";
 import Finance from "./pages/Finance";
 import CallTracking from "./pages/CallTracking";
 import CallList from "./pages/CallList";
+import AdFundPayment from "./pages/AdFundPayment";
+import MetaLead from "./pages/MetaLead";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -46,6 +48,8 @@ const App = () => (
             <Route path="/finance" element={<ProtectedDashboard><Finance /></ProtectedDashboard>} />
             <Route path="/call-tracking" element={<ProtectedDashboard><CallTracking /></ProtectedDashboard>} />
             <Route path="/call-list" element={<ProtectedDashboard><CallList /></ProtectedDashboard>} />
+            <Route path="/ad-fund-payment" element={<ProtectedDashboard><AdFundPayment /></ProtectedDashboard>} />
+            <Route path="/meta-lead" element={<ProtectedDashboard><MetaLead /></ProtectedDashboard>} />
             <Route path="/analytics" element={<ProtectedDashboard allowedRoles={["admin"]}><Analytics /></ProtectedDashboard>} />
             <Route path="/settings" element={<ProtectedDashboard allowedRoles={["admin"]}><Settings /></ProtectedDashboard>} />
             <Route path="*" element={<NotFound />} />
