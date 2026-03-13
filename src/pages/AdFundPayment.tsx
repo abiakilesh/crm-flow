@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trash2, Plus, Download } from "lucide-react";
+import { Trash2, Plus, Download, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
 
@@ -19,6 +19,9 @@ export default function AdFundPayment() {
   const [projectFilter, setProjectFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ paid_date: "", paid_amount: "" });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ paid_date: "", paid_amount: "" });
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -67,6 +70,33 @@ export default function AdFundPayment() {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const updatePayment = useMutation({
+    mutationFn: async () => {
+      if (!editId) return;
+      const { error } = await supabase
+        .from("ad_fund_payments" as any)
+        .update({
+          paid_date: editForm.paid_date,
+          paid_amount: parseFloat(editForm.paid_amount),
+        })
+        .eq("id", editId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ad_fund_payments"] });
+      toast.success("Payment updated");
+      setEditOpen(false);
+      setEditId(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const openEdit = (p: any) => {
+    setEditId(p.id);
+    setEditForm({ paid_date: p.paid_date, paid_amount: String(p.paid_amount) });
+    setEditOpen(true);
+  };
 
   const { data: profiles } = useQuery({
     queryKey: ["profiles-map"],
@@ -214,7 +244,14 @@ export default function AdFundPayment() {
                     <TableCell>{format(new Date(p.created_at), "dd-MM-yyyy")}</TableCell>
                     <TableCell>{getCreatorName(p.created_by)}</TableCell>
                     {role === "admin" && (
-                      <TableCell>
+                      <TableCell className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openEdit(p)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="destructive"
                           size="icon"
@@ -238,6 +275,47 @@ export default function AdFundPayment() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Payment</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              updatePayment.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Paid Date *</label>
+              <Input
+                type="date"
+                value={editForm.paid_date}
+                onChange={(e) => setEditForm({ ...editForm, paid_date: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Paid Amount *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="₹ 0.00"
+                value={editForm.paid_amount}
+                onChange={(e) => setEditForm({ ...editForm, paid_amount: e.target.value })}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={updatePayment.isPending}>
+              {updatePayment.isPending ? "Updating..." : "Update"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

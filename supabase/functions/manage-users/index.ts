@@ -21,14 +21,18 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "seed") {
-      // Create initial admin account
+      // Create initial admin account or update password if exists
       const { email, password, full_name } = body;
       
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const adminExists = existingUsers?.users?.some(u => u.email === email);
-      if (adminExists) {
-        return new Response(JSON.stringify({ error: "Admin already exists" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const existingAdmin = existingUsers?.users?.find(u => u.email === email);
+      
+      if (existingAdmin) {
+        // Update password for existing admin
+        const { error: updateErr } = await supabase.auth.admin.updateUserById(existingAdmin.id, { password });
+        if (updateErr) throw updateErr;
+        return new Response(JSON.stringify({ success: true, user_id: existingAdmin.id, message: "Password updated" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -118,6 +122,26 @@ Deno.serve(async (req) => {
     if (action === "delete") {
       const { user_id } = body;
       const { error } = await supabase.auth.admin.deleteUser(user_id);
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "reset_password") {
+      const { user_id, password } = body;
+      if (!password || password.length < 8) {
+        return new Response(JSON.stringify({ error: "Password must be at least 8 characters" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+        return new Response(JSON.stringify({ error: "Password must contain uppercase, lowercase, and a number" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error } = await supabase.auth.admin.updateUserById(user_id, { password });
       if (error) throw error;
 
       return new Response(JSON.stringify({ success: true }), {
