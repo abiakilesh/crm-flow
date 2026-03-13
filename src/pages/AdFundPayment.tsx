@@ -71,6 +71,33 @@ export default function AdFundPayment() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const updatePayment = useMutation({
+    mutationFn: async () => {
+      if (!editId) return;
+      const { error } = await supabase
+        .from("ad_fund_payments" as any)
+        .update({
+          paid_date: editForm.paid_date,
+          paid_amount: parseFloat(editForm.paid_amount),
+        })
+        .eq("id", editId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ad_fund_payments"] });
+      toast.success("Payment updated");
+      setEditOpen(false);
+      setEditId(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const openEdit = (p: any) => {
+    setEditId(p.id);
+    setEditForm({ paid_date: p.paid_date, paid_amount: String(p.paid_amount) });
+    setEditOpen(true);
+  };
+
   const { data: profiles } = useQuery({
     queryKey: ["profiles-map"],
     queryFn: async () => {
