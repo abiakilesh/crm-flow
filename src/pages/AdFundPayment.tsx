@@ -275,6 +275,47 @@ export default function AdFundPayment() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Payment</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              updatePayment.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Paid Date *</label>
+              <Input
+                type="date"
+                value={editForm.paid_date}
+                onChange={(e) => setEditForm({ ...editForm, paid_date: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Paid Amount *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="₹ 0.00"
+                value={editForm.paid_amount}
+                onChange={(e) => setEditForm({ ...editForm, paid_amount: e.target.value })}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={updatePayment.isPending}>
+              {updatePayment.isPending ? "Updating..." : "Update"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
