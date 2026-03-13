@@ -19,6 +19,9 @@ export default function AdFundPayment() {
   const [projectFilter, setProjectFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ paid_date: "", paid_amount: "" });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ paid_date: "", paid_amount: "" });
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
