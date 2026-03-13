@@ -244,7 +244,14 @@ export default function AdFundPayment() {
                     <TableCell>{format(new Date(p.created_at), "dd-MM-yyyy")}</TableCell>
                     <TableCell>{getCreatorName(p.created_by)}</TableCell>
                     {role === "admin" && (
-                      <TableCell>
+                      <TableCell className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openEdit(p)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="destructive"
                           size="icon"
