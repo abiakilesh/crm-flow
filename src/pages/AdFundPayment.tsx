@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trash2, Plus, Download } from "lucide-react";
+import { Trash2, Plus, Download, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
 
