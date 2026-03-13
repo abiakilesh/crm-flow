@@ -9,9 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trash2, Plus, Download, Pencil } from "lucide-react";
+import { Trash2, Plus, Download, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
+
+const PAGE_SIZE = 10;
 
 export default function AdFundPayment() {
   const { role, user } = useAuth();
@@ -24,6 +26,7 @@ export default function AdFundPayment() {
   const [editForm, setEditForm] = useState({ paid_date: "", paid_amount: "" });
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ["ad_fund_payments", projectFilter],
@@ -112,7 +115,6 @@ export default function AdFundPayment() {
     return p?.full_name || "—";
   };
 
-  // Filter by date range
   const filtered = (payments || []).filter((p) => {
     if (dateFrom && p.paid_date < dateFrom) return false;
     if (dateTo && p.paid_date > dateTo) return false;
@@ -120,12 +122,12 @@ export default function AdFundPayment() {
   });
 
   const totalAmount = filtered.reduce((sum, p) => sum + Number(p.paid_amount || 0), 0);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const exportToExcel = () => {
-    if (!filtered.length) {
-      toast.error("No data to export");
-      return;
-    }
+    if (!filtered.length) { toast.error("No data to export"); return; }
     const rows = filtered.map((p, i) => ({
       "SNo": i + 1,
       "Paid Date": format(new Date(p.paid_date), "dd-MM-yyyy"),
@@ -155,36 +157,15 @@ export default function AdFundPayment() {
                 <Button><Plus className="mr-2 h-4 w-4" /> Add Payment</Button>
               </DialogTrigger>
               <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Payment</DialogTitle>
-                </DialogHeader>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    addPayment.mutate();
-                  }}
-                  className="space-y-4"
-                >
+                <DialogHeader><DialogTitle>Add Payment</DialogTitle></DialogHeader>
+                <form onSubmit={(e) => { e.preventDefault(); addPayment.mutate(); }} className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Paid Date *</label>
-                    <Input
-                      type="date"
-                      value={form.paid_date}
-                      onChange={(e) => setForm({ ...form, paid_date: e.target.value })}
-                      required
-                    />
+                    <Input type="date" value={form.paid_date} onChange={(e) => setForm({ ...form, paid_date: e.target.value })} required />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Paid Amount *</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="₹ 0.00"
-                      value={form.paid_amount}
-                      onChange={(e) => setForm({ ...form, paid_amount: e.target.value })}
-                      required
-                    />
+                    <Input type="number" step="0.01" min="0" placeholder="₹ 0.00" value={form.paid_amount} onChange={(e) => setForm({ ...form, paid_amount: e.target.value })} required />
                   </div>
                   <Button type="submit" className="w-full" disabled={addPayment.isPending}>
                     {addPayment.isPending ? "Submitting..." : "Submit"}
@@ -196,20 +177,17 @@ export default function AdFundPayment() {
         </div>
       </div>
 
-      {/* Date range filter */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-muted-foreground">From:</label>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-auto" />
+          <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="w-auto" />
         </div>
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-muted-foreground">To:</label>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-auto" />
+          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="w-auto" />
         </div>
         {(dateFrom || dateTo) && (
-          <Button variant="ghost" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); }}>
-            Clear
-          </Button>
+          <Button variant="ghost" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}>Clear</Button>
         )}
       </div>
 
@@ -228,37 +206,21 @@ export default function AdFundPayment() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
-                </TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No payments found</TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              ) : paginated.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No payments found</TableCell></TableRow>
               ) : (
-                filtered.map((p, i) => (
+                paginated.map((p, i) => (
                   <TableRow key={p.id}>
-                    <TableCell>{i + 1}</TableCell>
+                    <TableCell>{(currentPage - 1) * PAGE_SIZE + i + 1}</TableCell>
                     <TableCell>{format(new Date(p.paid_date), "dd-MM-yyyy")}</TableCell>
                     <TableCell>₹ {Number(p.paid_amount).toFixed(2)}</TableCell>
                     <TableCell>{format(new Date(p.created_at), "dd-MM-yyyy")}</TableCell>
                     <TableCell>{getCreatorName(p.created_by)}</TableCell>
                     {role === "admin" && (
                       <TableCell className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => openEdit(p)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => deletePayment.mutate(p.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="destructive" size="icon" onClick={() => deletePayment.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button>
                       </TableCell>
                     )}
                   </TableRow>
@@ -276,39 +238,40 @@ export default function AdFundPayment() {
         </CardContent>
       </Card>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Button key={p} variant={p === currentPage ? "default" : "outline"} size="sm" onClick={() => setPage(p)} className="w-8">
+                {p}
+              </Button>
+            ))}
+            <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Payment</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              updatePayment.mutate();
-            }}
-            className="space-y-4"
-          >
+          <DialogHeader><DialogTitle>Edit Payment</DialogTitle></DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); updatePayment.mutate(); }} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Paid Date *</label>
-              <Input
-                type="date"
-                value={editForm.paid_date}
-                onChange={(e) => setEditForm({ ...editForm, paid_date: e.target.value })}
-                required
-              />
+              <Input type="date" value={editForm.paid_date} onChange={(e) => setEditForm({ ...editForm, paid_date: e.target.value })} required />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Paid Amount *</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="₹ 0.00"
-                value={editForm.paid_amount}
-                onChange={(e) => setEditForm({ ...editForm, paid_amount: e.target.value })}
-                required
-              />
+              <Input type="number" step="0.01" min="0" placeholder="₹ 0.00" value={editForm.paid_amount} onChange={(e) => setEditForm({ ...editForm, paid_amount: e.target.value })} required />
             </div>
             <Button type="submit" className="w-full" disabled={updatePayment.isPending}>
               {updatePayment.isPending ? "Updating..." : "Update"}
