@@ -21,14 +21,18 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "seed") {
-      // Create initial admin account
+      // Create initial admin account or update password if exists
       const { email, password, full_name } = body;
       
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const adminExists = existingUsers?.users?.some(u => u.email === email);
-      if (adminExists) {
-        return new Response(JSON.stringify({ error: "Admin already exists" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const existingAdmin = existingUsers?.users?.find(u => u.email === email);
+      
+      if (existingAdmin) {
+        // Update password for existing admin
+        const { error: updateErr } = await supabase.auth.admin.updateUserById(existingAdmin.id, { password });
+        if (updateErr) throw updateErr;
+        return new Response(JSON.stringify({ success: true, user_id: existingAdmin.id, message: "Password updated" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
