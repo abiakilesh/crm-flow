@@ -199,6 +199,19 @@ export default function Settings() {
                       <SelectItem value="client">Client</SelectItem>
                     </SelectContent>
                   </Select>
+                  {userForm.role === "client" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Assign Project</label>
+                      <Select value={userForm.project_id} onValueChange={(val) => setUserForm({ ...userForm, project_id: val })}>
+                        <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
+                        <SelectContent>
+                          {(projects || []).map((p) => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <Button className="w-full" onClick={() => createUser.mutate()} disabled={createUser.isPending}>
                     {createUser.isPending ? "Creating..." : "Create User"}
                   </Button>
