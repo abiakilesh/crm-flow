@@ -58,7 +58,6 @@ export default function MetaLead() {
 
   // Auto-filter by client's assigned project
   const effectiveProjectFilter = role === "client" && profile?.project_id ? profile.project_id : projectFilter;
-  const effectiveProjectFilter = role === "client" && profile?.project_id ? profile.project_id : projectFilter;
 
   const { data: records, isLoading } = useQuery({
     queryKey: ["meta_leads", effectiveProjectFilter],
