@@ -93,6 +93,7 @@ export default function Settings() {
           full_name: userForm.full_name,
           phone: userForm.phone,
           role: userForm.role,
+          project_id: userForm.role === "client" && userForm.project_id ? userForm.project_id : undefined,
         },
       });
       if (res.error) throw res.error;
