@@ -268,7 +268,11 @@ export default function MetaLead() {
     }
   };
 
-  const allRecords = records || [];
+  const allRecords = (records || []).filter((r) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return r.client_name?.toLowerCase().includes(s) || r.campaign_name?.toLowerCase().includes(s);
+  });
   const totalPages = Math.max(1, Math.ceil(allRecords.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const paginated = allRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
