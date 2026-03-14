@@ -25,7 +25,7 @@ export default function Settings() {
 
   // User creation
   const [userDialog, setUserDialog] = useState(false);
-  const [userForm, setUserForm] = useState({ email: "", password: "", full_name: "", phone: "", role: "client" as string });
+  const [userForm, setUserForm] = useState({ email: "", password: "", full_name: "", phone: "", role: "client" as string, project_id: "" });
 
   const { data: projects } = useQuery({
     queryKey: ["projects-all"],
