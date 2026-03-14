@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "create") {
-      const { email, password, full_name, phone, role } = body;
+      const { email, password, full_name, phone, role, project_id } = body;
 
       // Validate password strength
       if (!password || password.length < 8) {
