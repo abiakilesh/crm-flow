@@ -102,7 +102,7 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-users"] });
       setUserDialog(false);
-      setUserForm({ email: "", password: "", full_name: "", phone: "", role: "client" });
+      setUserForm({ email: "", password: "", full_name: "", phone: "", role: "client", project_id: "" });
       toast.success("User created!");
     },
     onError: (err: any) => toast.error(err.message),
