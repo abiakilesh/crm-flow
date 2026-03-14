@@ -68,13 +68,15 @@ export default function Settings() {
     queryKey: ["all-users"],
     queryFn: async () => {
       const [profilesRes, rolesRes] = await Promise.all([
-        supabase.from("profiles").select("*"),
+        supabase.from("profiles").select("*") as any,
         supabase.from("user_roles").select("user_id, role"),
       ]);
       if (profilesRes.error) throw profilesRes.error;
-      const roleMap = new Map((rolesRes.data || []).map(r => [r.user_id, r.role]));
-      return (profilesRes.data || []).map(p => ({ ...p, role: roleMap.get(p.user_id) || null }));
+      const roleMap = new Map((rolesRes.data || []).map((r: any) => [r.user_id, r.role]));
+      const projectMap = new Map((projects || []).map(p => [p.id, p.name]));
+      return (profilesRes.data || []).map((p: any) => ({ ...p, role: roleMap.get(p.user_id) || null, project_name: p.project_id ? projectMap.get(p.project_id) : null }));
     },
+    enabled: !!projects,
   });
 
   const createUser = useMutation({
