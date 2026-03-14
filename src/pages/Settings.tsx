@@ -227,9 +227,10 @@ export default function Settings() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Actions</TableHead>
+                   <TableHead>Phone</TableHead>
+                   <TableHead>Role</TableHead>
+                   <TableHead>Project</TableHead>
+                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

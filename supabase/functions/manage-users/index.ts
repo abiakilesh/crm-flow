@@ -107,9 +107,12 @@ Deno.serve(async (req) => {
       });
       if (createErr) throw createErr;
 
-      // Update profile with phone
-      if (phone) {
-        await supabase.from("profiles").update({ phone }).eq("user_id", newUser.user.id);
+      // Update profile with phone and project_id
+      const profileUpdate: Record<string, any> = {};
+      if (phone) profileUpdate.phone = phone;
+      if (project_id) profileUpdate.project_id = project_id;
+      if (Object.keys(profileUpdate).length > 0) {
+        await supabase.from("profiles").update(profileUpdate).eq("user_id", newUser.user.id);
       }
 
       // Assign role
