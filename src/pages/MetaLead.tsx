@@ -36,6 +36,7 @@ export default function MetaLead() {
   const [editForm, setEditForm] = useState({ ...emptyForm });
   const [editUploading, setEditUploading] = useState(false);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
 
   const uploadLogo = async (file: File, setTarget: (url: string) => void, setLoading: (v: boolean) => void) => {
     if (!file.type.startsWith("image/")) { toast.error("Please upload an image file"); return; }
