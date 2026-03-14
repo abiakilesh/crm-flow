@@ -334,7 +334,16 @@ export default function MetaLead() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-foreground">Meta Lead</h2>
         <div className="flex items-center gap-2">
-          <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search client or campaign..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="pl-9 w-[220px]"
+            />
+          </div>
+          {role === "admin" && <ProjectFilter value={projectFilter} onChange={setProjectFilter} />}
           {role === "admin" && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
