@@ -22,7 +22,7 @@ const emptyForm = {
 };
 
 export default function MetaLead() {
-  const { role, user } = useAuth();
+  const { role, user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [projectFilter, setProjectFilter] = useState("all");
   const [open, setOpen] = useState(false);
