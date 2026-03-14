@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Download, Trash2, Eye, Upload, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Download, Trash2, Eye, Upload, Pencil, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const PAGE_SIZE = 10;
