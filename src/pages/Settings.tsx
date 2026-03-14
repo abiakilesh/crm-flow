@@ -243,6 +243,7 @@ export default function Settings() {
                         {u.role || "No role"}
                       </Badge>
                     </TableCell>
+                    <TableCell>{u.project_name || "—"}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => deleteUser.mutate(u.user_id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
