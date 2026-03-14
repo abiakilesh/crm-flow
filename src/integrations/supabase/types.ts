@@ -316,6 +316,7 @@ export type Database = {
           full_name: string
           id: string
           phone: string | null
+          project_id: string | null
           updated_at: string
           user_id: string
         }
@@ -325,6 +326,7 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          project_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -334,10 +336,19 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          project_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {

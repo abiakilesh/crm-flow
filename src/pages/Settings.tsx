@@ -25,7 +25,7 @@ export default function Settings() {
 
   // User creation
   const [userDialog, setUserDialog] = useState(false);
-  const [userForm, setUserForm] = useState({ email: "", password: "", full_name: "", phone: "", role: "client" as string });
+  const [userForm, setUserForm] = useState({ email: "", password: "", full_name: "", phone: "", role: "client" as string, project_id: "" });
 
   const { data: projects } = useQuery({
     queryKey: ["projects-all"],
@@ -68,13 +68,15 @@ export default function Settings() {
     queryKey: ["all-users"],
     queryFn: async () => {
       const [profilesRes, rolesRes] = await Promise.all([
-        supabase.from("profiles").select("*"),
+        supabase.from("profiles").select("*") as any,
         supabase.from("user_roles").select("user_id, role"),
       ]);
       if (profilesRes.error) throw profilesRes.error;
-      const roleMap = new Map((rolesRes.data || []).map(r => [r.user_id, r.role]));
-      return (profilesRes.data || []).map(p => ({ ...p, role: roleMap.get(p.user_id) || null }));
+      const roleMap = new Map((rolesRes.data || []).map((r: any) => [r.user_id, r.role]));
+      const projectMap = new Map((projects || []).map(p => [p.id, p.name]));
+      return (profilesRes.data || []).map((p: any) => ({ ...p, role: roleMap.get(p.user_id) || null, project_name: p.project_id ? projectMap.get(p.project_id) : null }));
     },
+    enabled: !!projects,
   });
 
   const createUser = useMutation({
@@ -93,6 +95,7 @@ export default function Settings() {
           full_name: userForm.full_name,
           phone: userForm.phone,
           role: userForm.role,
+          project_id: userForm.role === "client" && userForm.project_id ? userForm.project_id : undefined,
         },
       });
       if (res.error) throw res.error;
@@ -101,7 +104,7 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-users"] });
       setUserDialog(false);
-      setUserForm({ email: "", password: "", full_name: "", phone: "", role: "client" });
+      setUserForm({ email: "", password: "", full_name: "", phone: "", role: "client", project_id: "" });
       toast.success("User created!");
     },
     onError: (err: any) => toast.error(err.message),
@@ -198,6 +201,19 @@ export default function Settings() {
                       <SelectItem value="client">Client</SelectItem>
                     </SelectContent>
                   </Select>
+                  {userForm.role === "client" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Assign Project</label>
+                      <Select value={userForm.project_id} onValueChange={(val) => setUserForm({ ...userForm, project_id: val })}>
+                        <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
+                        <SelectContent>
+                          {(projects || []).map((p) => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <Button className="w-full" onClick={() => createUser.mutate()} disabled={createUser.isPending}>
                     {createUser.isPending ? "Creating..." : "Create User"}
                   </Button>
@@ -211,9 +227,10 @@ export default function Settings() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Actions</TableHead>
+                   <TableHead>Phone</TableHead>
+                   <TableHead>Role</TableHead>
+                   <TableHead>Project</TableHead>
+                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -227,6 +244,7 @@ export default function Settings() {
                         {u.role || "No role"}
                       </Badge>
                     </TableCell>
+                    <TableCell>{u.project_name || "—"}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => deleteUser.mutate(u.user_id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />

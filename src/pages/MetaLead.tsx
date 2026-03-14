@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Download, Trash2, Eye, Upload, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Download, Trash2, Eye, Upload, Pencil, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const PAGE_SIZE = 10;
@@ -22,7 +22,7 @@ const emptyForm = {
 };
 
 export default function MetaLead() {
-  const { role, user } = useAuth();
+  const { role, user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [projectFilter, setProjectFilter] = useState("all");
   const [open, setOpen] = useState(false);
@@ -36,6 +36,7 @@ export default function MetaLead() {
   const [editForm, setEditForm] = useState({ ...emptyForm });
   const [editUploading, setEditUploading] = useState(false);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
 
   const uploadLogo = async (file: File, setTarget: (url: string) => void, setLoading: (v: boolean) => void) => {
     if (!file.type.startsWith("image/")) { toast.error("Please upload an image file"); return; }
@@ -55,14 +56,17 @@ export default function MetaLead() {
     }
   };
 
+  // Auto-filter by client's assigned project
+  const effectiveProjectFilter = role === "client" && profile?.project_id ? profile.project_id : projectFilter;
+
   const { data: records, isLoading } = useQuery({
-    queryKey: ["meta_leads", projectFilter],
+    queryKey: ["meta_leads", effectiveProjectFilter],
     queryFn: async () => {
       let q = supabase
         .from("meta_leads" as any)
         .select("*, projects(name)")
         .order("created_at", { ascending: false });
-      if (projectFilter !== "all") q = q.eq("project_id", projectFilter);
+      if (effectiveProjectFilter !== "all") q = q.eq("project_id", effectiveProjectFilter);
       const { data, error } = await q;
       if (error) throw error;
       return data as any[];
@@ -263,7 +267,11 @@ export default function MetaLead() {
     }
   };
 
-  const allRecords = records || [];
+  const allRecords = (records || []).filter((r) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return r.client_name?.toLowerCase().includes(s) || r.campaign_name?.toLowerCase().includes(s);
+  });
   const totalPages = Math.max(1, Math.ceil(allRecords.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const paginated = allRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -325,7 +333,16 @@ export default function MetaLead() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-foreground">Meta Lead</h2>
         <div className="flex items-center gap-2">
-          <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search client or campaign..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="pl-9 w-[220px]"
+            />
+          </div>
+          {role === "admin" && <ProjectFilter value={projectFilter} onChange={setProjectFilter} />}
           {role === "admin" && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
