@@ -56,14 +56,18 @@ export default function MetaLead() {
     }
   };
 
+  // Auto-filter by client's assigned project
+  const { profile } = useAuth();
+  const effectiveProjectFilter = role === "client" && profile?.project_id ? profile.project_id : projectFilter;
+
   const { data: records, isLoading } = useQuery({
-    queryKey: ["meta_leads", projectFilter],
+    queryKey: ["meta_leads", effectiveProjectFilter],
     queryFn: async () => {
       let q = supabase
         .from("meta_leads" as any)
         .select("*, projects(name)")
         .order("created_at", { ascending: false });
-      if (projectFilter !== "all") q = q.eq("project_id", projectFilter);
+      if (effectiveProjectFilter !== "all") q = q.eq("project_id", effectiveProjectFilter);
       const { data, error } = await q;
       if (error) throw error;
       return data as any[];
