@@ -57,7 +57,7 @@ export default function MetaLead() {
   };
 
   // Auto-filter by client's assigned project
-  const { profile } = useAuth();
+  const effectiveProjectFilter = role === "client" && profile?.project_id ? profile.project_id : projectFilter;
   const effectiveProjectFilter = role === "client" && profile?.project_id ? profile.project_id : projectFilter;
 
   const { data: records, isLoading } = useQuery({
