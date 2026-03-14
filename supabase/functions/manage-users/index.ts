@@ -21,17 +21,22 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "seed") {
-      // Create initial admin account or update password if exists
-      const { email, password, full_name } = body;
+      // Create or update a user account with a given role
+      const { email, password, full_name, role = "admin" } = body;
       
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const existingAdmin = existingUsers?.users?.find(u => u.email === email);
+      const existingUser = existingUsers?.users?.find(u => u.email === email);
       
-      if (existingAdmin) {
-        // Update password for existing admin
-        const { error: updateErr } = await supabase.auth.admin.updateUserById(existingAdmin.id, { password });
+      if (existingUser) {
+        // Update password for existing user
+        const { error: updateErr } = await supabase.auth.admin.updateUserById(existingUser.id, { password });
         if (updateErr) throw updateErr;
-        return new Response(JSON.stringify({ success: true, user_id: existingAdmin.id, message: "Password updated" }), {
+        // Ensure role exists
+        const { data: existingRole } = await supabase.from("user_roles").select("id").eq("user_id", existingUser.id).single();
+        if (!existingRole) {
+          await supabase.from("user_roles").insert({ user_id: existingUser.id, role });
+        }
+        return new Response(JSON.stringify({ success: true, user_id: existingUser.id, message: "Password updated" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -44,10 +49,10 @@ Deno.serve(async (req) => {
       });
       if (createErr) throw createErr;
 
-      // Assign admin role
+      // Assign role
       const { error: roleErr } = await supabase.from("user_roles").insert({
         user_id: newUser.user.id,
-        role: "admin",
+        role,
       });
       if (roleErr) throw roleErr;
 
