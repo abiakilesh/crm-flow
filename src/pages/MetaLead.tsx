@@ -10,10 +10,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Download, Trash2, Eye, Upload, Pencil, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Plus, Download, Trash2, Eye, Upload, Pencil, ChevronLeft, ChevronRight, Search, Image as ImageIcon } from "lucide-react";
+import famLogo from "@/assets/fam-logo.jpeg";
 
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const PAGE_SIZE = 10;
+const DEFAULT_CLIENT_LOGO = "/placeholder.svg";
 
 const emptyForm = {
   client_name: "", campaign_name: "", conversion: "", month: "", report_date: "",
@@ -38,15 +40,22 @@ export default function MetaLead() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
+  const getDisplayLogo = (logoUrl?: string | null) => logoUrl || DEFAULT_CLIENT_LOGO;
+
   const uploadLogo = async (file: File, setTarget: (url: string) => void, setLoading: (v: boolean) => void) => {
-    if (!file.type.startsWith("image/")) { toast.error("Please upload an image file"); return; }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
     setLoading(true);
     try {
       const ext = file.name.split(".").pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("client-logos").upload(fileName, file);
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from("client-logos").getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("client-logos").getPublicUrl(fileName);
       setTarget(publicUrl);
       toast.success("Logo uploaded");
     } catch (err: any) {
@@ -56,16 +65,12 @@ export default function MetaLead() {
     }
   };
 
-  // Auto-filter by client's assigned project
   const effectiveProjectFilter = role === "client" && profile?.project_id ? profile.project_id : projectFilter;
 
   const { data: records, isLoading } = useQuery({
     queryKey: ["meta_leads", effectiveProjectFilter],
     queryFn: async () => {
-      let q = supabase
-        .from("meta_leads" as any)
-        .select("*, projects(name)")
-        .order("created_at", { ascending: false });
+      let q = supabase.from("meta_leads" as any).select("*, projects(name)").order("created_at", { ascending: false });
       if (effectiveProjectFilter !== "all") q = q.eq("project_id", effectiveProjectFilter);
       const { data, error } = await q;
       if (error) throw error;
@@ -76,13 +81,18 @@ export default function MetaLead() {
   const addRecord = useMutation({
     mutationFn: async () => {
       const insert: any = {
-        client_name: form.client_name, campaign_name: form.campaign_name,
-        conversion: form.conversion, month: form.month, report_date: form.report_date,
-        result: parseInt(form.result) || 0, reach: parseInt(form.reach) || 0,
+        client_name: form.client_name,
+        campaign_name: form.campaign_name,
+        conversion: form.conversion,
+        month: form.month,
+        report_date: form.report_date,
+        result: parseInt(form.result) || 0,
+        reach: parseInt(form.reach) || 0,
         impression: parseInt(form.impression) || 0,
         cost_per_result: parseFloat(form.cost_per_result) || 0,
         total_amount: parseFloat(form.total_amount) || 0,
-        client_logo_url: form.client_logo_url, created_by: user?.id,
+        client_logo_url: form.client_logo_url,
+        created_by: user?.id,
       };
       if (projectFilter !== "all") insert.project_id = projectFilter;
       const { error } = await supabase.from("meta_leads" as any).insert(insert);
@@ -100,15 +110,22 @@ export default function MetaLead() {
   const updateRecord = useMutation({
     mutationFn: async () => {
       if (!editId) return;
-      const { error } = await supabase.from("meta_leads" as any).update({
-        client_name: editForm.client_name, campaign_name: editForm.campaign_name,
-        conversion: editForm.conversion, month: editForm.month, report_date: editForm.report_date,
-        result: parseInt(editForm.result) || 0, reach: parseInt(editForm.reach) || 0,
-        impression: parseInt(editForm.impression) || 0,
-        cost_per_result: parseFloat(editForm.cost_per_result) || 0,
-        total_amount: parseFloat(editForm.total_amount) || 0,
-        client_logo_url: editForm.client_logo_url,
-      }).eq("id", editId);
+      const { error } = await supabase
+        .from("meta_leads" as any)
+        .update({
+          client_name: editForm.client_name,
+          campaign_name: editForm.campaign_name,
+          conversion: editForm.conversion,
+          month: editForm.month,
+          report_date: editForm.report_date,
+          result: parseInt(editForm.result) || 0,
+          reach: parseInt(editForm.reach) || 0,
+          impression: parseInt(editForm.impression) || 0,
+          cost_per_result: parseFloat(editForm.cost_per_result) || 0,
+          total_amount: parseFloat(editForm.total_amount) || 0,
+          client_logo_url: editForm.client_logo_url,
+        })
+        .eq("id", editId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -135,136 +152,158 @@ export default function MetaLead() {
   const openEdit = (r: any) => {
     setEditId(r.id);
     setEditForm({
-      client_name: r.client_name || "", campaign_name: r.campaign_name || "",
-      conversion: r.conversion || "", month: r.month || "", report_date: r.report_date || "",
-      result: String(r.result || 0), reach: String(r.reach || 0),
-      impression: String(r.impression || 0), cost_per_result: String(r.cost_per_result || 0),
-      total_amount: String(r.total_amount || 0), client_logo_url: r.client_logo_url || "",
+      client_name: r.client_name || "",
+      campaign_name: r.campaign_name || "",
+      conversion: r.conversion || "",
+      month: r.month || "",
+      report_date: r.report_date || "",
+      result: String(r.result || 0),
+      reach: String(r.reach || 0),
+      impression: String(r.impression || 0),
+      cost_per_result: String(r.cost_per_result || 0),
+      total_amount: String(r.total_amount || 0),
+      client_logo_url: r.client_logo_url || "",
     });
     setEditOpen(true);
   };
 
-  const downloadReport = (record: any) => {
+  const loadImage = (src: string) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      if (/^https?:/i.test(src)) img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+
+  const downloadReport = async (record: any) => {
     const canvas = document.createElement("canvas");
     canvas.width = 800;
     canvas.height = 600;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const drawReport = () => {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, 800, 600);
-      ctx.fillStyle = "#6b2121";
-      ctx.fillRect(0, 0, 800, 50);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 20px Arial";
-      ctx.fillText("ADS REPORT", 320, 33);
-      ctx.fillStyle = "#0081fb";
-      ctx.font = "bold 28px Arial";
-      ctx.fillText("∞ Meta", 30, 90);
-      ctx.fillStyle = "#333333";
-      ctx.font = "14px Arial";
-      ctx.fillText(`MONTH: ${record.month}`, 30, 130);
-      ctx.fillText(`DATE: ${record.report_date}`, 250, 130);
-      ctx.fillStyle = "#6b2121";
-      ctx.font = "bold 16px Arial";
-      ctx.fillText("CLIENT NAME", 30, 165);
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 22px Arial";
-      ctx.fillText(record.client_name.toUpperCase(), 30, 195);
+    const clientLogoSrc = getDisplayLogo(record.client_logo_url);
+    const assets = await Promise.allSettled([loadImage(clientLogoSrc), loadImage(famLogo)]);
+    const clientLogo = assets[0].status === "fulfilled" ? assets[0].value : null;
+    const famLogoImg = assets[1].status === "fulfilled" ? assets[1].value : null;
 
-      const tableY = 220;
-      ctx.fillStyle = "#6b2121";
-      ctx.fillRect(30, tableY, 350, 30);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 13px Arial";
-      ctx.fillText("CAMPAIGN NAME", 45, tableY + 20);
-      ctx.fillText("CONVERSION", 230, tableY + 20);
-      ctx.fillStyle = "#d4a0a0";
-      ctx.fillRect(30, tableY + 30, 350, 28);
-      ctx.fillStyle = "#333333";
-      ctx.font = "13px Arial";
-      ctx.fillText(record.campaign_name, 45, tableY + 50);
-      ctx.fillText(record.conversion, 230, tableY + 50);
-      ctx.fillStyle = "#6b2121";
-      ctx.fillRect(30, tableY + 75, 350, 28);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 14px Arial";
-      ctx.fillText("RESULT", 160, tableY + 94);
-      ctx.fillStyle = "#333333";
-      ctx.fillRect(30, tableY + 103, 350, 35);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 24px Arial";
-      ctx.fillText(String(record.result), 180, tableY + 130);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 800, 600);
 
-      const metricsY = tableY + 155;
-      ctx.fillStyle = "#555";
-      ctx.font = "bold 12px Arial";
-      ctx.fillText("REACH", 80, metricsY);
-      ctx.fillText("IMPRESSION", 230, metricsY);
-      ctx.fillStyle = "#6b2121";
-      ctx.fillRect(30, metricsY + 8, 160, 35);
-      ctx.fillRect(210, metricsY + 8, 170, 35);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 20px Arial";
-      ctx.fillText(String(record.reach), 80, metricsY + 32);
-      ctx.fillText(String(record.impression), 260, metricsY + 32);
+    ctx.fillStyle = "#6b2121";
+    ctx.fillRect(0, 0, 800, 54);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px Arial";
+    ctx.fillText("ADS REPORT", 316, 34);
 
-      const cx = 600, cy = 300, r = 120;
-      const total = record.reach + record.impression + record.result;
-      const slices = [
-        { val: record.reach, color: "#8b0000", label: "REACH" },
-        { val: record.impression, color: "#cd5c5c", label: "IMPRESSION" },
-        { val: record.result, color: "#e8a0a0", label: "RESULT" },
-      ];
-      let startAngle = -Math.PI / 2;
-      slices.forEach((s) => {
-        const angle = (s.val / (total || 1)) * 2 * Math.PI;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, r, startAngle, startAngle + angle);
-        ctx.fillStyle = s.color;
-        ctx.fill();
-        startAngle += angle;
-      });
-      slices.forEach((s, i) => {
-        const ly = 440 + i * 22;
-        ctx.fillStyle = s.color;
-        ctx.fillRect(520, ly, 14, 14);
-        ctx.fillStyle = "#333";
-        ctx.font = "12px Arial";
-        ctx.fillText(s.label, 540, ly + 12);
-      });
+    ctx.fillStyle = "#f7eeee";
+    ctx.fillRect(30, 70, 740, 86);
+    ctx.strokeStyle = "#d7b0b0";
+    ctx.strokeRect(30, 70, 740, 86);
 
-      // Never show cost/total in downloaded report
-      triggerDownload();
-    };
-
-    const triggerDownload = () => {
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `meta_report_${record.client_name}_${record.report_date}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-    };
-
-    if (record.client_logo_url) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        drawReport();
-        const logoSize = 50;
-        ctx.drawImage(img, 740 - logoSize, 60, logoSize, logoSize);
-        triggerDownload();
-      };
-      img.onerror = () => drawReport();
-      img.src = record.client_logo_url;
-    } else {
-      drawReport();
+    if (clientLogo) {
+      ctx.drawImage(clientLogo, 50, 88, 92, 50);
     }
+
+    ctx.fillStyle = "#1877f2";
+    ctx.font = "bold 28px Arial";
+    ctx.fillText("Meta", 363, 120);
+    ctx.fillStyle = "#4b5563";
+    ctx.font = "12px Arial";
+    ctx.fillText("Lead Report", 360, 140);
+
+    if (famLogoImg) {
+      ctx.drawImage(famLogoImg, 632, 82, 118, 62);
+    }
+
+    ctx.fillStyle = "#333333";
+    ctx.font = "14px Arial";
+    ctx.fillText(`MONTH: ${record.month}`, 30, 185);
+    ctx.fillText(`DATE: ${record.report_date}`, 250, 185);
+    ctx.fillStyle = "#6b2121";
+    ctx.font = "bold 16px Arial";
+    ctx.fillText("CLIENT NAME", 30, 220);
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 22px Arial";
+    ctx.fillText(String(record.client_name || "").toUpperCase(), 30, 250);
+
+    const tableY = 275;
+    ctx.fillStyle = "#6b2121";
+    ctx.fillRect(30, tableY, 350, 30);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px Arial";
+    ctx.fillText("CAMPAIGN NAME", 45, tableY + 20);
+    ctx.fillText("CONVERSION", 230, tableY + 20);
+    ctx.fillStyle = "#d4a0a0";
+    ctx.fillRect(30, tableY + 30, 350, 28);
+    ctx.fillStyle = "#333333";
+    ctx.font = "13px Arial";
+    ctx.fillText(record.campaign_name || "", 45, tableY + 50);
+    ctx.fillText(record.conversion || "", 230, tableY + 50);
+    ctx.fillStyle = "#6b2121";
+    ctx.fillRect(30, tableY + 75, 350, 28);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("RESULT", 160, tableY + 94);
+    ctx.fillStyle = "#333333";
+    ctx.fillRect(30, tableY + 103, 350, 35);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText(String(record.result), 180, tableY + 130);
+
+    const metricsY = tableY + 155;
+    ctx.fillStyle = "#555555";
+    ctx.font = "bold 12px Arial";
+    ctx.fillText("REACH", 80, metricsY);
+    ctx.fillText("IMPRESSION", 230, metricsY);
+    ctx.fillStyle = "#6b2121";
+    ctx.fillRect(30, metricsY + 8, 160, 35);
+    ctx.fillRect(210, metricsY + 8, 170, 35);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px Arial";
+    ctx.fillText(String(record.reach), 80, metricsY + 32);
+    ctx.fillText(String(record.impression), 260, metricsY + 32);
+
+    const cx = 600;
+    const cy = 355;
+    const r = 120;
+    const total = Number(record.reach || 0) + Number(record.impression || 0) + Number(record.result || 0);
+    const slices = [
+      { val: Number(record.reach || 0), color: "#8b0000", label: "REACH" },
+      { val: Number(record.impression || 0), color: "#cd5c5c", label: "IMPRESSION" },
+      { val: Number(record.result || 0), color: "#e8a0a0", label: "RESULT" },
+    ];
+
+    let startAngle = -Math.PI / 2;
+    slices.forEach((slice) => {
+      const angle = (slice.val / (total || 1)) * 2 * Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, startAngle, startAngle + angle);
+      ctx.fillStyle = slice.color;
+      ctx.fill();
+      startAngle += angle;
+    });
+
+    slices.forEach((slice, index) => {
+      const ly = 500 + index * 22;
+      ctx.fillStyle = slice.color;
+      ctx.fillRect(520, ly, 14, 14);
+      ctx.fillStyle = "#333333";
+      ctx.font = "12px Arial";
+      ctx.fillText(slice.label, 540, ly + 12);
+    });
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `meta_report_${record.client_name}_${record.report_date}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   };
 
   const allRecords = (records || []).filter((r) => {
@@ -276,16 +315,23 @@ export default function MetaLead() {
   const currentPage = Math.min(page, totalPages);
   const paginated = allRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const renderFormFields = (f: typeof emptyForm, setF: (v: typeof emptyForm) => void, logoInputRef: React.RefObject<HTMLInputElement>, isUploading: boolean, onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void) => (
+  const renderFormFields = (
+    f: typeof emptyForm,
+    setF: (v: typeof emptyForm) => void,
+    logoInputRef: React.RefObject<HTMLInputElement>,
+    isUploading: boolean,
+    onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  ) => (
     <>
       <div className="space-y-1">
         <label className="text-sm font-medium">Client Logo</label>
         <div className="flex items-center gap-2">
           <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={onUpload} />
           <Button type="button" variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} disabled={isUploading}>
-            <Upload className="mr-2 h-4 w-4" />{isUploading ? "Uploading..." : "Upload Logo"}
+            <Upload className="mr-2 h-4 w-4" />
+            {isUploading ? "Uploading..." : "Upload Logo"}
           </Button>
-          {f.client_logo_url && <img src={f.client_logo_url} alt="Logo" className="h-8 w-8 object-contain rounded border" />}
+          <img src={getDisplayLogo(f.client_logo_url)} alt="Client logo preview" className="h-8 w-8 rounded border object-contain" />
         </div>
         <Input placeholder="Or paste URL..." value={f.client_logo_url} onChange={(e) => setF({ ...f, client_logo_url: e.target.value })} className="mt-1" />
       </div>
@@ -293,8 +339,16 @@ export default function MetaLead() {
         <div className="space-y-1">
           <label className="text-sm font-medium">Month *</label>
           <Select value={f.month} onValueChange={(v) => setF({ ...f, month: v })}>
-            <SelectTrigger><SelectValue placeholder="Select month" /></SelectTrigger>
-            <SelectContent>{MONTHS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+            <SelectTrigger>
+              <SelectValue placeholder="Select month" />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((month) => (
+                <SelectItem key={month} value={month}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
         </div>
         <div className="space-y-1">
@@ -317,13 +371,28 @@ export default function MetaLead() {
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1"><label className="text-sm font-medium">Result</label><Input type="number" value={f.result} onChange={(e) => setF({ ...f, result: e.target.value })} /></div>
-        <div className="space-y-1"><label className="text-sm font-medium">Reach</label><Input type="number" value={f.reach} onChange={(e) => setF({ ...f, reach: e.target.value })} /></div>
-        <div className="space-y-1"><label className="text-sm font-medium">Impression</label><Input type="number" value={f.impression} onChange={(e) => setF({ ...f, impression: e.target.value })} /></div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Result</label>
+          <Input type="number" value={f.result} onChange={(e) => setF({ ...f, result: e.target.value })} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Reach</label>
+          <Input type="number" value={f.reach} onChange={(e) => setF({ ...f, reach: e.target.value })} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Impression</label>
+          <Input type="number" value={f.impression} onChange={(e) => setF({ ...f, impression: e.target.value })} />
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1"><label className="text-sm font-medium">Cost Per Result</label><Input type="number" step="0.01" value={f.cost_per_result} onChange={(e) => setF({ ...f, cost_per_result: e.target.value })} /></div>
-        <div className="space-y-1"><label className="text-sm font-medium">Total Amount</label><Input type="number" step="0.01" value={f.total_amount} onChange={(e) => setF({ ...f, total_amount: e.target.value })} /></div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Cost Per Result</label>
+          <Input type="number" step="0.01" value={f.cost_per_result} onChange={(e) => setF({ ...f, cost_per_result: e.target.value })} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Total Amount</label>
+          <Input type="number" step="0.01" value={f.total_amount} onChange={(e) => setF({ ...f, total_amount: e.target.value })} />
+        </div>
       </div>
     </>
   );
@@ -338,19 +407,29 @@ export default function MetaLead() {
             <Input
               placeholder="Search client or campaign..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="pl-9 w-[220px]"
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-[220px] pl-9"
             />
           </div>
           {role === "admin" && <ProjectFilter value={projectFilter} onChange={setProjectFilter} />}
           {role === "admin" && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button><Plus className="mr-2 h-4 w-4" /> Add Meta Lead</Button>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" /> Add Meta Lead
+                </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Add Meta Lead Report</DialogTitle></DialogHeader>
-                <form onSubmit={(e) => { e.preventDefault(); addRecord.mutate(); }} className="space-y-3">
+              <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add Meta Lead Report</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  addRecord.mutate();
+                }} className="space-y-3">
                   {renderFormFields(form, setForm, fileInputRef, uploading, (e) => {
                     const file = e.target.files?.[0];
                     if (file) uploadLogo(file, (url) => setForm({ ...form, client_logo_url: url }), setUploading);
@@ -365,29 +444,49 @@ export default function MetaLead() {
         </div>
       </div>
 
-      {/* View Report Dialog */}
       <Dialog open={!!viewItem} onOpenChange={() => setViewItem(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Ads Report</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Ads Report</DialogTitle>
+          </DialogHeader>
           {viewItem && (
             <div className="space-y-3">
-              <div className="bg-[hsl(var(--primary)/0.1)] rounded-lg p-4 space-y-2">
-                {viewItem.client_logo_url && <img src={viewItem.client_logo_url} alt="Client Logo" className="h-12 w-auto object-contain" />}
-                <p className="text-sm"><span className="font-semibold">Month:</span> {viewItem.month} &nbsp; <span className="font-semibold">Date:</span> {viewItem.report_date}</p>
+              <div className="space-y-2 rounded-lg bg-[hsl(var(--primary)/0.1)] p-4">
+                <img src={getDisplayLogo(viewItem.client_logo_url)} alt="Client Logo" className="h-12 w-auto object-contain" />
+                <p className="text-sm">
+                  <span className="font-semibold">Month:</span> {viewItem.month} &nbsp; <span className="font-semibold">Date:</span> {viewItem.report_date}
+                </p>
                 <p className="text-lg font-bold">{viewItem.client_name}</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <p><span className="font-semibold">Campaign:</span> {viewItem.campaign_name}</p>
-                  <p><span className="font-semibold">Conversion:</span> {viewItem.conversion}</p>
+                  <p>
+                    <span className="font-semibold">Campaign:</span> {viewItem.campaign_name}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Conversion:</span> {viewItem.conversion}
+                  </p>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center mt-2">
-                  <div className="bg-background rounded p-2"><p className="text-xs text-muted-foreground">Result</p><p className="text-xl font-bold">{viewItem.result}</p></div>
-                  <div className="bg-background rounded p-2"><p className="text-xs text-muted-foreground">Reach</p><p className="text-xl font-bold">{viewItem.reach}</p></div>
-                  <div className="bg-background rounded p-2"><p className="text-xs text-muted-foreground">Impression</p><p className="text-xl font-bold">{viewItem.impression}</p></div>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded bg-background p-2">
+                    <p className="text-xs text-muted-foreground">Result</p>
+                    <p className="text-xl font-bold">{viewItem.result}</p>
+                  </div>
+                  <div className="rounded bg-background p-2">
+                    <p className="text-xs text-muted-foreground">Reach</p>
+                    <p className="text-xl font-bold">{viewItem.reach}</p>
+                  </div>
+                  <div className="rounded bg-background p-2">
+                    <p className="text-xs text-muted-foreground">Impression</p>
+                    <p className="text-xl font-bold">{viewItem.impression}</p>
+                  </div>
                 </div>
                 {role === "admin" && (
-                  <div className="grid grid-cols-2 gap-2 text-sm pt-2 border-t border-border mt-2">
-                    <p><span className="font-semibold">Cost/Result:</span> ₹ {Number(viewItem.cost_per_result).toFixed(2)}</p>
-                    <p><span className="font-semibold">Total:</span> ₹ {Number(viewItem.total_amount).toFixed(2)}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border pt-2 text-sm">
+                    <p>
+                      <span className="font-semibold">Cost/Result:</span> ₹ {Number(viewItem.cost_per_result).toFixed(2)}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Total:</span> ₹ {Number(viewItem.total_amount).toFixed(2)}
+                    </p>
                   </div>
                 )}
               </div>
@@ -399,11 +498,15 @@ export default function MetaLead() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Edit Meta Lead</DialogTitle></DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); updateRecord.mutate(); }} className="space-y-3">
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Meta Lead</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            updateRecord.mutate();
+          }} className="space-y-3">
             {renderFormFields(editForm, setEditForm, editFileInputRef, editUploading, (e) => {
               const file = e.target.files?.[0];
               if (file) uploadLogo(file, (url) => setEditForm({ ...editForm, client_logo_url: url }), setEditUploading);
@@ -435,15 +538,23 @@ export default function MetaLead() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={role === "admin" ? 11 : 9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={role === "admin" ? 11 : 9} className="py-8 text-center text-muted-foreground">
+                    Loading...
+                  </TableCell>
+                </TableRow>
               ) : paginated.length === 0 ? (
-                <TableRow><TableCell colSpan={role === "admin" ? 11 : 9} className="text-center py-8 text-muted-foreground">No records</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={role === "admin" ? 11 : 9} className="py-8 text-center text-muted-foreground">
+                    No records
+                  </TableCell>
+                </TableRow>
               ) : (
                 paginated.map((r, i) => (
                   <TableRow key={r.id}>
                     <TableCell>{(currentPage - 1) * PAGE_SIZE + i + 1}</TableCell>
                     <TableCell>
-                      {r.client_logo_url ? <img src={r.client_logo_url} alt="" className="h-8 w-8 object-contain rounded" /> : <span className="text-muted-foreground text-xs">—</span>}
+                      <img src={getDisplayLogo(r.client_logo_url)} alt={`${r.client_name} logo`} className="h-8 w-8 rounded object-contain" />
                     </TableCell>
                     <TableCell className="font-medium">{r.client_name}</TableCell>
                     <TableCell>{r.campaign_name}</TableCell>
@@ -455,12 +566,20 @@ export default function MetaLead() {
                     {role === "admin" && <TableCell>₹ {Number(r.total_amount).toFixed(2)}</TableCell>}
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="outline" size="icon" onClick={() => setViewItem(r)}><Eye className="h-4 w-4" /></Button>
-                        <Button variant="outline" size="icon" onClick={() => downloadReport(r)}><Download className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" onClick={() => setViewItem(r)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => downloadReport(r)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
                         {role === "admin" && (
                           <>
-                            <Button variant="outline" size="icon" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="destructive" size="icon" onClick={() => deleteRecord.mutate(r.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="icon" onClick={() => openEdit(r)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="destructive" size="icon" onClick={() => deleteRecord.mutate(r.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </>
                         )}
                       </div>
@@ -473,7 +592,6 @@ export default function MetaLead() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
@@ -484,7 +602,9 @@ export default function MetaLead() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <Button key={p} variant={p === currentPage ? "default" : "outline"} size="sm" onClick={() => setPage(p)} className="w-8">{p}</Button>
+              <Button key={p} variant={p === currentPage ? "default" : "outline"} size="sm" onClick={() => setPage(p)} className="w-8">
+                {p}
+              </Button>
             ))}
             <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>
               <ChevronRight className="h-4 w-4" />
