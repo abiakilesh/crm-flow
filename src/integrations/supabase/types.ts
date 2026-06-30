@@ -49,6 +49,36 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       call_lists: {
         Row: {
           created_at: string
@@ -93,12 +123,16 @@ export type Database = {
           call_time: string
           caller_id: string | null
           created_at: string
+          customer_name: string | null
           duration_minutes: number | null
+          feedback: string | null
+          follow_up_at: string | null
           id: string
           lead_id: string | null
           notes: string | null
           phone_number: string | null
           project_id: string | null
+          recording_url: string | null
           status: string
         }
         Insert: {
@@ -106,12 +140,16 @@ export type Database = {
           call_time?: string
           caller_id?: string | null
           created_at?: string
+          customer_name?: string | null
           duration_minutes?: number | null
+          feedback?: string | null
+          follow_up_at?: string | null
           id?: string
           lead_id?: string | null
           notes?: string | null
           phone_number?: string | null
           project_id?: string | null
+          recording_url?: string | null
           status?: string
         }
         Update: {
@@ -119,12 +157,16 @@ export type Database = {
           call_time?: string
           caller_id?: string | null
           created_at?: string
+          customer_name?: string | null
           duration_minutes?: number | null
+          feedback?: string | null
+          follow_up_at?: string | null
           id?: string
           lead_id?: string | null
           notes?: string | null
           phone_number?: string | null
           project_id?: string | null
+          recording_url?: string | null
           status?: string
         }
         Relationships: [
@@ -197,6 +239,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_name: string
+          feedback: string | null
+          follow_up_at: string | null
           id: string
           lead_by: string | null
           lead_id: string
@@ -204,6 +248,7 @@ export type Database = {
           place: string | null
           project_id: string | null
           review: string | null
+          status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
         }
         Insert: {
@@ -211,6 +256,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_name: string
+          feedback?: string | null
+          follow_up_at?: string | null
           id?: string
           lead_by?: string | null
           lead_id?: string
@@ -218,6 +265,7 @@ export type Database = {
           place?: string | null
           project_id?: string | null
           review?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
         Update: {
@@ -225,6 +273,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_name?: string
+          feedback?: string | null
+          follow_up_at?: string | null
           id?: string
           lead_by?: string | null
           lead_id?: string
@@ -232,6 +282,7 @@ export type Database = {
           place?: string | null
           project_id?: string | null
           review?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
         Relationships: [
@@ -309,12 +360,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read_at: string | null
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          read_at?: string | null
+          related_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read_at?: string | null
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string
           full_name: string
           id: string
+          is_active: boolean
+          manager_id: string | null
           phone: string | null
           project_id: string | null
           updated_at: string
@@ -325,6 +411,8 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_active?: boolean
+          manager_id?: string | null
           phone?: string | null
           project_id?: string | null
           updated_at?: string
@@ -335,6 +423,8 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_active?: boolean
+          manager_id?: string | null
           phone?: string | null
           project_id?: string | null
           updated_at?: string
@@ -460,6 +550,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_team_ids: { Args: { _manager_id: string }; Returns: string[] }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
