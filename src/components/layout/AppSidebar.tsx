@@ -47,7 +47,7 @@ export function AppSidebar() {
             <Briefcase className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-sidebar-foreground tracking-tight">Job CRM</h2>
+            <h2 className="text-base font-bold text-sidebar-foreground tracking-tight">GEM VENTURES CRM</h2>
           </div>
         </div>
         {profile && (

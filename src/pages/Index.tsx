@@ -52,7 +52,7 @@ export default function Index() {
               <Briefcase className="h-7 w-7 text-primary" />
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-              FAM <span className="text-primary">Infomedia</span>
+              GEM <span className="text-primary">VENTURES</span>
             </h1>
             <p className="text-muted-foreground text-sm">Sign in to start your session</p>
           </div>

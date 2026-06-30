@@ -12,7 +12,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <SidebarTrigger />
             <div className="ml-4 flex items-center gap-2">
               <Briefcase className="h-4 w-4 text-primary" />
-              <h1 className="text-sm font-semibold text-foreground tracking-tight">Job Consultancy CRM</h1>
+              <h1 className="text-sm font-semibold text-foreground tracking-tight">GEM VENTURES CRM</h1>
             </div>
           </header>
           <div className="flex-1 p-6 overflow-auto bg-background">{children}</div>
