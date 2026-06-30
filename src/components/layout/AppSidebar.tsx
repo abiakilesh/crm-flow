@@ -53,7 +53,7 @@ export function AppSidebar() {
         {profile && (
           <div className="mt-4 px-1">
             <p className="text-sm font-medium text-sidebar-foreground truncate">{profile.full_name || profile.email}</p>
-            <Badge variant="outline" className={`mt-1.5 text-[10px] uppercase tracking-wider font-semibold border ${roleBadgeColors[role || "member"]}`}>
+            <Badge variant="outline" className={`mt-1.5 text-[10px] uppercase tracking-wider font-semibold border ${roleBadgeColors[role || "sales"]}`}>
               {role}
             </Badge>
           </div>
