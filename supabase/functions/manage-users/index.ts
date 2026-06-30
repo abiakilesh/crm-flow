@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "create") {
-      const { email, password, full_name, phone, role, project_id } = body;
+      const { email, password, full_name, phone, role, manager_id } = body;
 
       // Validate password strength
       if (!password || password.length < 8) {
@@ -98,6 +98,11 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (!["admin", "manager", "sales"].includes(role)) {
+        return new Response(JSON.stringify({ error: "Invalid role" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
         email,
@@ -107,10 +112,10 @@ Deno.serve(async (req) => {
       });
       if (createErr) throw createErr;
 
-      // Update profile with phone and project_id
+      // Update profile with phone and manager_id
       const profileUpdate: Record<string, any> = {};
       if (phone) profileUpdate.phone = phone;
-      if (project_id) profileUpdate.project_id = project_id;
+      if (role === "sales" && manager_id) profileUpdate.manager_id = manager_id;
       if (Object.keys(profileUpdate).length > 0) {
         await supabase.from("profiles").update(profileUpdate).eq("user_id", newUser.user.id);
       }
@@ -120,9 +125,31 @@ Deno.serve(async (req) => {
         user_id: newUser.user.id,
         role,
       });
-      if (roleErr) throw roleErr;
+      if (roleErr) {
+        // Rollback the created auth user so caller can retry
+        await supabase.auth.admin.deleteUser(newUser.user.id);
+        throw roleErr;
+      }
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "assign_manager") {
+      const { user_id, manager_id } = body;
+      const { error } = await supabase.from("profiles").update({ manager_id: manager_id || null }).eq("user_id", user_id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "toggle_active") {
+      const { user_id, is_active } = body;
+      const { error } = await supabase.from("profiles").update({ is_active }).eq("user_id", user_id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
