@@ -23,7 +23,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedDashboard({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: ("admin" | "manager" | "member" | "client")[] }) {
+function ProtectedDashboard({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: ("admin" | "manager" | "sales")[] }) {
   return (
     <ProtectedRoute allowedRoles={allowedRoles}>
       <DashboardLayout>{children}</DashboardLayout>

@@ -17,21 +17,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "client"] as const },
-  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "client"] as const },
-  { title: "Sales", url: "/sales", icon: TrendingUp, roles: ["admin", "client"] as const },
-  { title: "Finance", url: "/finance", icon: DollarSign, roles: ["admin", "client"] as const },
-  { title: "Call Tracking", url: "/call-tracking", icon: Phone, roles: ["admin", "client"] as const },
-  { title: "Call List", url: "/call-list", icon: List, roles: ["admin", "client"] as const },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "sales"] as const },
+  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "manager", "sales"] as const },
+  { title: "Call Tracking", url: "/call-tracking", icon: Phone, roles: ["admin", "manager", "sales"] as const },
+  { title: "Sales", url: "/sales", icon: TrendingUp, roles: ["admin", "manager"] as const },
+  { title: "Finance", url: "/finance", icon: DollarSign, roles: ["admin"] as const },
   { title: "Ad Fund Payment", url: "/ad-fund-payment", icon: Wallet, roles: ["admin"] as const },
-  { title: "Meta Lead", url: "/meta-lead", icon: Megaphone, roles: ["admin", "client"] as const },
+  { title: "Meta Lead", url: "/meta-lead", icon: Megaphone, roles: ["admin"] as const },
   { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin"] as const },
   { title: "Settings", url: "/settings", icon: Settings, roles: ["admin"] as const },
 ];
 
 const roleBadgeColors: Record<string, string> = {
   admin: "bg-red-500/20 text-red-300 border-red-500/30",
-  client: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  manager: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  sales: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
 };
 
 export function AppSidebar() {
@@ -53,7 +53,7 @@ export function AppSidebar() {
         {profile && (
           <div className="mt-4 px-1">
             <p className="text-sm font-medium text-sidebar-foreground truncate">{profile.full_name || profile.email}</p>
-            <Badge variant="outline" className={`mt-1.5 text-[10px] uppercase tracking-wider font-semibold border ${roleBadgeColors[role || "member"]}`}>
+            <Badge variant="outline" className={`mt-1.5 text-[10px] uppercase tracking-wider font-semibold border ${roleBadgeColors[role || "sales"]}`}>
               {role}
             </Badge>
           </div>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Trash2, Search, Pencil, Upload, FileSpreadsheet } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -18,11 +19,11 @@ export default function Leads() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [callListDialogOpen, setCallListDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ customer_name: "", place: "", mobile: "", review: "" });
   const [uploading, setUploading] = useState(false);
-  const [previewData, setPreviewData] = useState<{ name: string; phone_number: string }[]>([]);
+  const [previewData, setPreviewData] = useState<{ customer_name: string; mobile: string; place: string; duplicate: boolean }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: leads, isLoading } = useQuery({
@@ -34,6 +35,31 @@ export default function Leads() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: salesUsers } = useQuery({
+    queryKey: ["sales-users"],
+    enabled: role === "admin",
+    queryFn: async () => {
+      const [profiles, roles] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name, email"),
+        supabase.from("user_roles").select("user_id, role").eq("role", "sales"),
+      ]);
+      const salesIds = new Set((roles.data || []).map((r: any) => r.user_id));
+      return (profiles.data || []).filter((p: any) => salesIds.has(p.user_id));
+    },
+  });
+
+  const assignLead = useMutation({
+    mutationFn: async (p: { lead_id: string; assigned_to: string }) => {
+      const { error } = await supabase.from("leads").update({ assigned_to: p.assigned_to || null }).eq("id", p.lead_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("Lead assigned");
+    },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const addLead = useMutation({
@@ -102,7 +128,7 @@ export default function Leads() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = evt.target?.result;
         const workbook = XLSX.read(data, { type: "binary" });
@@ -111,41 +137,57 @@ export default function Leads() {
         const jsonData = XLSX.utils.sheet_to_json<any>(sheet);
 
         const parsed = jsonData.map((row: any) => ({
-          name: String(row["Name"] || row["name"] || row["NAME"] || "").trim(),
-          phone_number: String(row["Phone"] || row["phone"] || row["Phone Number"] || row["phone_number"] || row["Mobile"] || row["mobile"] || row["PHONE"] || "").trim(),
-        })).filter((r) => r.name && r.phone_number);
+          customer_name: String(row["Name"] || row["name"] || row["Customer Name"] || row["customer_name"] || "").trim(),
+          mobile: String(row["Phone"] || row["phone"] || row["Mobile"] || row["mobile"] || row["Phone Number"] || "").trim(),
+          place: String(row["Place"] || row["place"] || row["City"] || row["city"] || "").trim(),
+        })).filter((r) => r.customer_name && r.mobile);
 
         if (parsed.length === 0) {
-          toast.error("No valid data found. Ensure columns: Name, Phone");
+          toast.error("No valid rows. Required columns: Name, Phone");
           return;
         }
-        setPreviewData(parsed);
+
+        // Duplicate phone detection against existing leads + within file
+        const existing = new Set((leads || []).map((l: any) => (l.mobile || "").replace(/\D/g, "")));
+        const seen = new Set<string>();
+        const withDup = parsed.map((r) => {
+          const norm = r.mobile.replace(/\D/g, "");
+          const dup = existing.has(norm) || seen.has(norm);
+          seen.add(norm);
+          return { ...r, duplicate: dup };
+        });
+        setPreviewData(withDup);
       } catch {
         toast.error("Failed to parse Excel file");
       }
     };
     reader.readAsBinaryString(file);
-    // Reset input so the same file can be re-selected
     e.target.value = "";
   };
 
-  const uploadCallList = async () => {
-    if (previewData.length === 0) return;
+  const importLeads = async () => {
+    const toInsert = previewData.filter((r) => !r.duplicate);
+    if (toInsert.length === 0) {
+      toast.error("No new leads to import (all duplicates)");
+      return;
+    }
     setUploading(true);
     try {
-      const rows = previewData.map((r, i) => ({
-        serial_no: i + 1,
-        name: r.name.substring(0, 255),
-        phone_number: r.phone_number.substring(0, 20),
+      const rows = toInsert.map((r) => ({
+        customer_name: r.customer_name.substring(0, 255),
+        mobile: r.mobile.substring(0, 20),
+        place: r.place.substring(0, 255),
+        lead_by: user?.id,
+        created_by: user?.id,
         project_id: projectFilter !== "all" ? projectFilter : null,
-        uploaded_by: user?.id,
       }));
-      const { error } = await supabase.from("call_lists").insert(rows);
+      const { error } = await supabase.from("leads").insert(rows);
       if (error) throw error;
-      toast.success(`${rows.length} contacts uploaded to call list!`);
+      const skipped = previewData.length - toInsert.length;
+      toast.success(`Imported ${rows.length} leads${skipped ? `, skipped ${skipped} duplicates` : ""}`);
       setPreviewData([]);
-      setCallListDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["call_lists"] });
+      setImportDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -168,18 +210,18 @@ export default function Leads() {
           </div>
           <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
 
-          {/* Call List Upload Button */}
-          <Dialog open={callListDialogOpen} onOpenChange={(open) => { setCallListDialogOpen(open); if (!open) setPreviewData([]); }}>
+          {role === "admin" && (
+          <Dialog open={importDialogOpen} onOpenChange={(open) => { setImportDialogOpen(open); if (!open) setPreviewData([]); }}>
             <DialogTrigger asChild>
               <Button variant="outline">
-                <FileSpreadsheet className="mr-2 h-4 w-4" /> Add Call List
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Import Excel/CSV
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>Upload Call List (Excel)</DialogTitle></DialogHeader>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle>Import Leads (Excel/CSV)</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Upload an Excel file with <strong>Name</strong> and <strong>Phone</strong> columns.
+                  Columns: <strong>Name</strong>, <strong>Phone</strong> (required), <strong>Place</strong> (optional). Duplicate phone numbers are auto-skipped.
                 </p>
                 <input
                   ref={fileInputRef}
@@ -194,39 +236,44 @@ export default function Leads() {
 
                 {previewData.length > 0 && (
                   <>
-                    <div className="rounded border max-h-48 overflow-auto">
+                    <div className="rounded border max-h-64 overflow-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>S.No</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Phone</TableHead>
+                            <TableHead>Place</TableHead>
+                            <TableHead>Status</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {previewData.slice(0, 20).map((r, i) => (
-                            <TableRow key={i}>
+                          {previewData.slice(0, 30).map((r, i) => (
+                            <TableRow key={i} className={r.duplicate ? "opacity-50" : ""}>
                               <TableCell>{i + 1}</TableCell>
-                              <TableCell>{r.name}</TableCell>
-                              <TableCell>{r.phone_number}</TableCell>
+                              <TableCell>{r.customer_name}</TableCell>
+                              <TableCell>{r.mobile}</TableCell>
+                              <TableCell>{r.place}</TableCell>
+                              <TableCell className={r.duplicate ? "text-destructive text-xs" : "text-emerald-600 text-xs"}>
+                                {r.duplicate ? "Duplicate" : "New"}
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                     </div>
-                    {previewData.length > 20 && (
-                      <p className="text-xs text-muted-foreground text-center">
-                        Showing 20 of {previewData.length} rows
-                      </p>
-                    )}
-                    <Button className="w-full" onClick={uploadCallList} disabled={uploading}>
-                      {uploading ? "Uploading..." : `Upload ${previewData.length} Contacts`}
+                    <div className="text-xs text-muted-foreground text-center">
+                      {previewData.length} rows • {previewData.filter(r => !r.duplicate).length} new • {previewData.filter(r => r.duplicate).length} duplicates
+                    </div>
+                    <Button className="w-full" onClick={importLeads} disabled={uploading}>
+                      {uploading ? "Importing..." : `Import ${previewData.filter(r => !r.duplicate).length} New Leads`}
                     </Button>
                   </>
                 )}
               </div>
             </DialogContent>
           </Dialog>
+          )}
 
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -276,14 +323,15 @@ export default function Leads() {
               <TableHead>Review</TableHead>
               <TableHead>Lead By</TableHead>
               <TableHead>Project</TableHead>
+              <TableHead>Assigned To</TableHead>
               {role === "admin" && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No leads found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No leads found</TableCell></TableRow>
             ) : (
               filtered.map((lead, i) => (
                 <TableRow key={lead.id}>
@@ -295,6 +343,20 @@ export default function Leads() {
                   <TableCell>{lead.review}</TableCell>
                   <TableCell>—</TableCell>
                   <TableCell>{(lead as any).projects?.name || "—"}</TableCell>
+                  <TableCell>
+                    {role === "admin" ? (
+                      <Select value={lead.assigned_to || ""} onValueChange={(val) => assignLead.mutate({ lead_id: lead.id, assigned_to: val })}>
+                        <SelectTrigger className="w-[170px] h-8"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                        <SelectContent>
+                          {(salesUsers || []).map((s: any) => (
+                            <SelectItem key={s.user_id} value={s.user_id}>{s.full_name || s.email}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      (salesUsers || []).find((s: any) => s.user_id === lead.assigned_to)?.full_name || (lead.assigned_to ? "Assigned" : "—")
+                    )}
+                  </TableCell>
                   {role === "admin" && (
                     <TableCell>
                       <div className="flex gap-1">
