@@ -19,6 +19,13 @@ import AdFundPayment from "./pages/AdFundPayment";
 import MetaLead from "./pages/MetaLead";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import EmployeeManagers from "./pages/EmployeeManagers";
+import EmployeeSales from "./pages/EmployeeSales";
+import ManagerDetails from "./pages/ManagerDetails";
+import SalesReport from "./pages/SalesReport";
+import LeadUploadHistory from "./pages/LeadUploadHistory";
+import SiteVisits from "./pages/SiteVisits";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +59,13 @@ const App = () => (
             <Route path="/meta-lead" element={<ProtectedDashboard><MetaLead /></ProtectedDashboard>} />
             <Route path="/analytics" element={<ProtectedDashboard allowedRoles={["admin"]}><Analytics /></ProtectedDashboard>} />
             <Route path="/settings" element={<ProtectedDashboard allowedRoles={["admin"]}><Settings /></ProtectedDashboard>} />
+            <Route path="/employee/managers" element={<ProtectedDashboard allowedRoles={["admin"]}><EmployeeManagers /></ProtectedDashboard>} />
+            <Route path="/employee/managers/:id" element={<ProtectedDashboard allowedRoles={["admin"]}><ManagerDetails /></ProtectedDashboard>} />
+            <Route path="/employee/sales" element={<ProtectedDashboard allowedRoles={["admin"]}><EmployeeSales /></ProtectedDashboard>} />
+            <Route path="/employee/sales/:id" element={<ProtectedDashboard allowedRoles={["admin"]}><SalesReport /></ProtectedDashboard>} />
+            <Route path="/lead-uploads" element={<ProtectedDashboard allowedRoles={["admin","manager"]}><LeadUploadHistory /></ProtectedDashboard>} />
+            <Route path="/site-visits" element={<ProtectedDashboard><SiteVisits /></ProtectedDashboard>} />
+            <Route path="/reports" element={<ProtectedDashboard allowedRoles={["admin","manager"]}><Reports /></ProtectedDashboard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
