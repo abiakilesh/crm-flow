@@ -17,6 +17,9 @@ export default function CallTracking() {
   const { role, user } = useAuth();
   const queryClient = useQueryClient();
   const [projectFilter, setProjectFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [playUrls, setPlayUrls] = useState<Record<string, string>>({});
@@ -42,6 +45,14 @@ export default function CallTracking() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const filteredLogs = (logs || []).filter((l: any) => {
+    const s = search.toLowerCase();
+    if (s && !(`${l.customer_name || ""} ${l.phone_number || ""}`).toLowerCase().includes(s)) return false;
+    if (dateFrom && l.call_date < dateFrom) return false;
+    if (dateTo && l.call_date > dateTo) return false;
+    return true;
   });
 
   const saveCall = async () => {
@@ -110,6 +121,9 @@ export default function CallTracking() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-foreground">Call Log</h2>
         <div className="flex items-center gap-2">
+          <Input placeholder="Search customer or phone" value={search} onChange={(e) => setSearch(e.target.value)} className="w-[220px]" />
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" />
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" />
           <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
           <Button variant="outline" onClick={exportCSV}><Download className="mr-2 h-4 w-4" /> Export CSV</Button>
           {(role === "sales" || role === "manager" || role === "admin") && (
@@ -171,10 +185,10 @@ export default function CallTracking() {
           <TableBody>
             {isLoading ? (
               <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
-            ) : (logs || []).length === 0 ? (
+            ) : filteredLogs.length === 0 ? (
               <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No call logs</TableCell></TableRow>
             ) : (
-              (logs || []).map((log, i) => (
+              filteredLogs.map((log, i) => (
                 <TableRow key={log.id}>
                   <TableCell>{i + 1}</TableCell>
                   <TableCell>{log.call_date}</TableCell>

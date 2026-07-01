@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, TrendingUp, DollarSign, Phone, BarChart3, Settings, LogOut, Briefcase, List, Wallet, Megaphone } from "lucide-react";
+import { LayoutDashboard, Users, TrendingUp, DollarSign, Phone, BarChart3, Settings, LogOut, Briefcase, Wallet, Megaphone, MapPin, UserCheck, FileUp, FileBarChart, ChevronDown } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -10,16 +10,23 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "sales"] as const },
   { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "manager", "sales"] as const },
   { title: "Call Tracking", url: "/call-tracking", icon: Phone, roles: ["admin", "manager", "sales"] as const },
+  { title: "Site Visits", url: "/site-visits", icon: MapPin, roles: ["admin", "manager", "sales"] as const },
+  { title: "Lead Uploads", url: "/lead-uploads", icon: FileUp, roles: ["admin", "manager"] as const },
+  { title: "Reports", url: "/reports", icon: FileBarChart, roles: ["admin", "manager"] as const },
   { title: "Sales", url: "/sales", icon: TrendingUp, roles: ["admin", "manager"] as const },
   { title: "Finance", url: "/finance", icon: DollarSign, roles: ["admin"] as const },
   { title: "Ad Fund Payment", url: "/ad-fund-payment", icon: Wallet, roles: ["admin"] as const },
@@ -74,6 +81,37 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {role === "admin" && (
+                <Collapsible defaultOpen className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="hover:bg-sidebar-accent transition-colors rounded-lg">
+                        <UserCheck className="mr-3 h-4 w-4" />
+                        <span>Employee Dashboard</span>
+                        <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to="/employee/managers" className="rounded-md" activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold">
+                              Managers
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink to="/employee/sales" className="rounded-md" activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold">
+                              Sales Executives
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

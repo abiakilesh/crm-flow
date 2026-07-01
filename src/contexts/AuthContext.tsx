@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; email: string; phone: string; project_id: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionRowId, setSessionRowId] = useState<string | null>(null);
 
   const fetchUserData = async (userId: string) => {
     const [roleRes, profileRes] = await Promise.all([
@@ -39,6 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         setTimeout(() => fetchUserData(session.user.id), 0);
+        if (_event === "SIGNED_IN") {
+          setTimeout(async () => {
+            const { data } = await supabase.from("user_sessions").insert({ user_id: session.user.id }).select("id").single();
+            if (data?.id) {
+              setSessionRowId(data.id);
+              try { localStorage.setItem("active_session_row", data.id); } catch {}
+            }
+          }, 0);
+        }
       } else {
         setRole(null);
         setProfile(null);
@@ -64,11 +74,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    try {
+      const rowId = sessionRowId || localStorage.getItem("active_session_row");
+      if (rowId) {
+        await supabase.from("user_sessions").update({ logout_at: new Date().toISOString() }).eq("id", rowId);
+        localStorage.removeItem("active_session_row");
+      }
+    } catch {}
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setRole(null);
     setProfile(null);
+    setSessionRowId(null);
   };
 
   const resetPassword = async (email: string) => {
