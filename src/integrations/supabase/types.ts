@@ -233,6 +233,33 @@ export type Database = {
           },
         ]
       }
+      lead_uploads: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          source: string | null
+          total_count: number
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          source?: string | null
+          total_count?: number
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          source?: string | null
+          total_count?: number
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           assigned_to: string | null
@@ -248,8 +275,10 @@ export type Database = {
           place: string | null
           project_id: string | null
           review: string | null
+          source: string | null
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
+          upload_batch_id: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -265,8 +294,10 @@ export type Database = {
           place?: string | null
           project_id?: string | null
           review?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
+          upload_batch_id?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -282,8 +313,10 @@ export type Database = {
           place?: string | null
           project_id?: string | null
           review?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
+          upload_batch_id?: string | null
         }
         Relationships: [
           {
@@ -524,6 +557,80 @@ export type Database = {
           },
         ]
       }
+      site_visits: {
+        Row: {
+          created_at: string
+          customer_name: string
+          gps_lat: number | null
+          gps_lng: number | null
+          id: string
+          image_urls: string[]
+          interest_level: Database["public"]["Enums"]["interest_level"]
+          lead_id: string | null
+          location: string | null
+          manager_id: string | null
+          phone_number: string
+          project_name: string | null
+          property_name: string | null
+          remarks: string | null
+          sales_id: string
+          status: string
+          updated_at: string
+          visit_date: string
+          visit_time: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: string
+          image_urls?: string[]
+          interest_level?: Database["public"]["Enums"]["interest_level"]
+          lead_id?: string | null
+          location?: string | null
+          manager_id?: string | null
+          phone_number: string
+          project_name?: string | null
+          property_name?: string | null
+          remarks?: string | null
+          sales_id: string
+          status?: string
+          updated_at?: string
+          visit_date: string
+          visit_time?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: string
+          image_urls?: string[]
+          interest_level?: Database["public"]["Enums"]["interest_level"]
+          lead_id?: string | null
+          location?: string | null
+          manager_id?: string | null
+          phone_number?: string
+          project_name?: string | null
+          property_name?: string | null
+          remarks?: string | null
+          sales_id?: string
+          status?: string
+          updated_at?: string
+          visit_date?: string
+          visit_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_visits_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -545,6 +652,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          login_at: string
+          logout_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          login_at?: string
+          logout_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          login_at?: string
+          logout_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -557,6 +688,11 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "manager" | "member" | "client" | "sales"
+      interest_level:
+        | "Very Interested"
+        | "Interested"
+        | "Need Follow-up"
+        | "Not Interested"
       lead_status:
         | "New"
         | "Contacted"
@@ -692,6 +828,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "member", "client", "sales"],
+      interest_level: [
+        "Very Interested",
+        "Interested",
+        "Need Follow-up",
+        "Not Interested",
+      ],
       lead_status: [
         "New",
         "Contacted",
