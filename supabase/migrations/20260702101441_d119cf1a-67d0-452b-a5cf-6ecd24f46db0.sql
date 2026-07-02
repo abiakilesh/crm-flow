@@ -1,0 +1,1 @@
+ALTER TABLE public.site_visits ADD COLUMN IF NOT EXISTS follow_up_date date;

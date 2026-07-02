@@ -561,6 +561,7 @@ export type Database = {
         Row: {
           created_at: string
           customer_name: string
+          follow_up_date: string | null
           gps_lat: number | null
           gps_lng: number | null
           id: string
@@ -582,6 +583,7 @@ export type Database = {
         Insert: {
           created_at?: string
           customer_name: string
+          follow_up_date?: string | null
           gps_lat?: number | null
           gps_lng?: number | null
           id?: string
@@ -603,6 +605,7 @@ export type Database = {
         Update: {
           created_at?: string
           customer_name?: string
+          follow_up_date?: string | null
           gps_lat?: number | null
           gps_lng?: number | null
           id?: string
